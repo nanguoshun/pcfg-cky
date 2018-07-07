@@ -6,7 +6,7 @@
 
 BinaryTree::BinaryTree(std::string str) {
     ptr_root_ = BuildBinaryTree(str);
-    PrintTree(ptr_root_);
+   // PrintTree(ptr_root_);
 }
 
 BinaryTree::~BinaryTree() {
@@ -31,9 +31,7 @@ Node *BinaryTree::BuildBinaryTree(std::string str) {
         std::string rigth_str = str.substr(index + 1, str.length() - index - 2);
         ptr_node->SetRightNode(BuildBinaryTree(rigth_str));
     }else if(index == -2){
-        int lenght = str.length();
-        int nn = str.length() - space_index -2;
-        int start = space_index+1;
+        // the terminator
         std::string left_str = str.substr(space_index+1, str.length() - space_index -2);
         Node *ptr_last_node = new Node(left_str);
         ptr_node->SetLeftNode(ptr_last_node);

@@ -9,16 +9,18 @@
 #include "binarytree.h"
 class PCFG{
 public:
-    PCFG(const char *file_name);
+    PCFG();
     ~PCFG();
     void Allocate();
     void BuildTreeFromPTB(const char *file_name);
-    void SupervisedTraining();
+    void SupervisedTraining(const char *file_name);
     void CountAll();
     void CountValue(std::string str);
     void CountRule(PCFG_Rule rule);
     void CalcWeight();
+    void SaveModel(std::string model_file);
     void Decoding(const char *file_name);
+    void ReadModel(std::string model_file);
     void CKY();
     std::string IterationTree(Node *ptr_root);
 private:
@@ -26,5 +28,7 @@ private:
     Rule_Map *ptr_rule_cout_map_;
     Element_Map *ptr_element_cout_map_;
     Rule_Weight *ptr_rule_weight_map_;
+
 };
+
 #endif //PCFG_PCFG_H

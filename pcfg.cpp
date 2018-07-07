@@ -3,9 +3,8 @@
 //
 #include "pcfg.h"
 
-PCFG::PCFG(const char *file_name) {
+PCFG::PCFG() {
     Allocate();
-    BuildTreeFromPTB(file_name);
 }
 
 PCFG::~PCFG() {
@@ -23,21 +22,24 @@ void PCFG::Allocate() {
 void PCFG::BuildTreeFromPTB(const char *file_name) {
     std::ifstream ifs(file_name);
     std::string str;
-    if (std::getline(ifs, str)) {
+    while (std::getline(ifs, str)) {
         BinaryTree *ptr_tree = new BinaryTree(str);
         tree_vector_.push_back(ptr_tree);
     }
 }
 
-void PCFG::SupervisedTraining() {
+void PCFG::SupervisedTraining(const char *file_name) {
+    BuildTreeFromPTB(file_name);
     CountAll();
     CalcWeight();
+    SaveModel(MODEL_FILE);
 }
 
 void PCFG::CountAll() {
     for (std::vector<BinaryTree *>::iterator it = tree_vector_.begin(); it != tree_vector_.end(); ++it) {
         Node *ptr_root = (*it)->GetRootNode();
         IterationTree(ptr_root);
+        std::cout << std::endl;
     }
 }
 
@@ -49,9 +51,16 @@ std::string PCFG::IterationTree(Node *ptr_root) {
     std::string root_str = ptr_root->GetData();
     std::string str_left = IterationTree(ptr_root->GetLeftNode());
     if(str_left.empty()){
+        //the terminator don't have left and right child.
+#ifdef IF_DEBUG_
+        std::cout << root_str << " ";
+#endif
         return root_str;
     }
     std::string str_right = IterationTree(ptr_root->GetRightNode());
+    if(str_right.empty()){
+        str_right = NO_RIGHT_CHILD_FLAG;
+    }
     CountValue(root_str);
     CountRule(std::make_pair(root_str, std::make_pair(str_left, str_right)));
     return root_str;
@@ -65,7 +74,7 @@ void PCFG::CountValue(std::string str) {
         //count increases 1;
         ptr_element_cout_map_->find(str)->second += 1;
     }
-#ifdef IF_DEBUG_
+#ifdef IF_DEBUG__
     std::cout << "the count of " << str << " is: " << ptr_element_cout_map_->find(str)->second << std::endl;
 #endif
 }
@@ -76,7 +85,7 @@ void PCFG::CountRule(PCFG_Rule rule) {
     } else {
         ptr_rule_cout_map_->find(rule)->second += 1;
     }
-#ifdef IF_DEBUG_
+#ifdef IF_DEBUG__
     std::cout << "the count of " << rule.first << " to " << rule.second.first << " , " << rule.second.second
               << " is: " << ptr_rule_cout_map_->find(rule)->second << std::endl;
 #endif
@@ -88,14 +97,45 @@ void PCFG::CalcWeight() {
         double weight = (double) (*it).second / (double) ptr_element_cout_map_->find(str)->second;
         PCFG_Rule rule = (*it).first;
         ptr_rule_weight_map_->insert(std::make_pair(rule,weight));
-#ifdef IF_DEBUG_
+#ifdef IF_DEBUG__
         std::cout << "the weight of " << rule.first << " to " << rule.second.first << " , " << rule.second.second
                    << " is: "<< weight <<std::endl;
 #endif
     }
 }
 
-void PCFG::Decoding() {
+void PCFG::SaveModel(std::string model_file) {
+    std::ofstream ofs(model_file);
+    for(Rule_Weight::iterator it = ptr_rule_weight_map_->begin(); it!=ptr_rule_weight_map_->end();++it){
+        ofs << (*it).first.first;
+        ofs << " ";
+        ofs << (*it).first.second.first;
+        ofs << " ";
+        ofs << (*it).first.second.second;
+        ofs << " ";
+        ofs << (*it).second;
+        ofs << "\n";
+    }
+}
+
+void PCFG::ReadModel(std::string model_file) {
+    std::ifstream ifs(model_file);
+    std::string str;
+    while (std::getline(ifs,str)){
+        std::string tag1, tag2, tag3;
+        double weight;
+        std::stringstream ss(str);
+        ss >> tag1;
+        ss >> tag2;
+        ss >> tag3;
+        ss >> weight;
+        PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2,tag3));
+        ptr_rule_weight_map_->insert(std::make_pair(rule,weight));
+    }
+}
+
+void PCFG::Decoding(const char *file_name) {
+    ReadModel(MODEL_FILE);
     CKY();
 }
 
