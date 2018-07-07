@@ -17,6 +17,7 @@ public:
     std::string IterationExtract(Node *ptr_root, std::ofstream *ofs);
     void Decoding(const char *file_name);
     void ReadModel(std::string model_file);
+    void GenerateNonTerminatorMap();
     void ReadSentence(std::string sentence_file);
     void InitCKY(std::vector<std::string> *ptr_vector, CKY_Score *ptr_CKY_score);
     void InitScore();
@@ -24,6 +25,7 @@ public:
     void CKY(std::vector<std::string> *ptr_x_vector);
 private:
     Rule_Weight *ptr_rule_weight_map_;
+    std::unordered_map<std::string, int> *ptr_non_terminator_map_;
     CKY_Map *ptr_cky_score_map_;
     std::vector<BinaryTree *> tree_vector_;
     bool isFirstWord_;

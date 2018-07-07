@@ -7,12 +7,25 @@
 Decoder::Decoder() {
     ptr_rule_weight_map_ = new Rule_Weight;
     ptr_cky_score_map_ = new CKY_Map;
+    ptr_non_terminator_map_ = new std::unordered_map<std::string, int>;
     isFirstWord_ = true;
+
 }
 
 Decoder::~Decoder() {
     delete ptr_rule_weight_map_;
     delete ptr_cky_score_map_;
+}
+
+void Decoder::GenerateNonTerminatorMap() {
+    int i = 0;
+    for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
+         std::string non_terminator_str = (*it).first.first;
+         if(ptr_non_terminator_map_->find(non_terminator_str) == ptr_non_terminator_map_->end()){
+             ptr_non_terminator_map_->insert(std::make_pair(non_terminator_str,i));
+             ++i;
+         }
+    }
 }
 
 void Decoder::ReadModel(std::string model_file) {
@@ -64,6 +77,7 @@ void Decoder::SaveSentenceFile(std::string root_str, std::ofstream *ofs) {
 void Decoder::Decoding(const char *test_file_name) {
     ReadModel(MODEL_FILE);
     ExtractSentenceFile(test_file_name);
+    GenerateNonTerminatorMap();
     std::ifstream ifs(SENTENCE_FILE);
     std::string str;
     while(std::getline(ifs,str)){
@@ -74,7 +88,6 @@ void Decoder::Decoding(const char *test_file_name) {
             str_vector.push_back(tmp);
         }
         InitCKY(&str_vector);
-
         /*
         for(int i=0; i<ptr_rule_weight_map_->size(); ++i){
             std::vector<std::vector<Point>> *pscore_matrix = new std::vector<std::vector<Point>>;
@@ -89,8 +102,8 @@ void Decoder::InitCKY(std::vector<std::string> *ptr_x_vector) {
     int size = ptr_x_vector->size();
     for (int i = 0; i < size; ++i) {
         std::pair<int, int> pos_pair = std::make_pair(i, i);
-        for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
-            std::string tag1 = (*it).first.first;
+        for (auto it = ptr_non_terminator_map_->begin(); it != ptr_non_terminator_map_->end(); ++it) {
+            std::string tag1 = (*it).first;
             CKY_Score cky_score = std::make_pair(pos_pair,tag1);
             double weight = 0;
             //check the weight of the rule;
@@ -109,8 +122,18 @@ void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
     for(int l = 1; l < size; ++l){
         for(int i = 0; i < size-1; ++i){
             int j = i + l;
-            for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it){
-
+            for (auto it = ptr_non_terminator_map_->begin(); it != ptr_non_terminator_map_->end(); ++it){
+                std::string x_str = (*it).first;
+                for(auto itt = ptr_rule_weight_map_->begin(); itt != ptr_rule_weight_map_->end(); ++itt){
+                    std::string xx_str = (*itt).first.first;
+                    if(xx_str == x_str){
+                        std::pair<std::string, std::string> child_pair = (*itt).first.second;
+                        std::string y_str = child_pair.first;
+                        std::string z_str = child_pair.second;
+                        double weight = (*itt).second;
+                        CKY_Score cky_score_y = std::make_pair(std::make_pair(i,))
+                    }
+                }
             }
         }
     }
