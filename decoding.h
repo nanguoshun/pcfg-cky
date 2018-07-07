@@ -11,16 +11,22 @@
 class Decoder{
 public:
     Decoder();
-    void ExtractSentenceFile(std::string sentence_file);
-    std::string IterationExtract(Node *ptr_root);
+    ~Decoder();
+    void ExtractSentenceFile(const char *file_name);
+    void SaveSentenceFile(std::string str,std::ofstream *ofs);
+    std::string IterationExtract(Node *ptr_root, std::ofstream *ofs);
     void Decoding(const char *file_name);
     void ReadModel(std::string model_file);
-    void CKY();
-
+    void ReadSentence(std::string sentence_file);
+    void InitCKY(std::vector<std::string> *ptr_vector, CKY_Score *ptr_CKY_score);
+    void InitScore();
+    void InitCKY(std::vector<std::string> *ptr_x_vector);
+    void CKY(std::vector<std::string> *ptr_x_vector);
 private:
     Rule_Weight *ptr_rule_weight_map_;
-    CKY_Score *ptr_CKY_score_map_;
-    std::ofstream *ptr_sentence_;
+    CKY_Map *ptr_cky_score_map_;
+    std::vector<BinaryTree *> tree_vector_;
+    bool isFirstWord_;
 };
 
 

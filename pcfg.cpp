@@ -14,9 +14,9 @@ PCFG::~PCFG() {
 }
 
 void PCFG::Allocate() {
-    ptr_rule_cout_map_ = new std::unordered_map<PCFG_Rule, int, boost::hash<PCFG_Rule>>;
-    ptr_element_cout_map_ = new std::unordered_map<std::string, int>;
-    ptr_rule_weight_map_ = new std::unordered_map<PCFG_Rule,double,  boost::hash<PCFG_Rule>>;
+    ptr_rule_cout_map_ = new Rule_Map;
+    ptr_element_cout_map_ = new Element_Map;
+    ptr_rule_weight_map_ = new Rule_Weight;
 }
 
 void PCFG::BuildTreeFromPTB(const char *file_name) {

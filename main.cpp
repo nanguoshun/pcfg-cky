@@ -4,7 +4,7 @@
 int main() {
 
     PCFG *ptr_pcfg = new PCFG();
-//    ptr_pcfg->SupervisedTraining("ptb-binary.train");
+    ptr_pcfg->SupervisedTraining("ptb-binary.train");
     Decoder *ptr_decoder = new Decoder();
     ptr_decoder->Decoding("ptb-binary.train");
     //std::string str = "(ROOT (NP (NNP Ms.)(NNP Haag))(S (VP (VBZ plays)(NNP Elianti))(. .)))";
