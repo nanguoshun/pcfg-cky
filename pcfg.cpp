@@ -38,18 +38,18 @@ void PCFG::SupervisedTraining(const char *file_name) {
 void PCFG::CountAll() {
     for (std::vector<BinaryTree *>::iterator it = tree_vector_.begin(); it != tree_vector_.end(); ++it) {
         Node *ptr_root = (*it)->GetRootNode();
-        IterationTree(ptr_root);
+        IterationTree(ptr_root, true);
         std::cout << std::endl;
     }
 }
 
-std::string PCFG::IterationTree(Node *ptr_root) {
+std::string PCFG::IterationTree(Node *ptr_root, bool isTraining) {
     if (NULL == ptr_root) {
         //return empty string;
         return std::string();
     }
     std::string root_str = ptr_root->GetData();
-    std::string str_left = IterationTree(ptr_root->GetLeftNode());
+    std::string str_left = IterationTree(ptr_root->GetLeftNode(), isTraining);
     if(str_left.empty()){
         //the terminator don't have left and right child.
 #ifdef IF_DEBUG_
@@ -57,12 +57,15 @@ std::string PCFG::IterationTree(Node *ptr_root) {
 #endif
         return root_str;
     }
-    std::string str_right = IterationTree(ptr_root->GetRightNode());
+    std::string str_right = IterationTree(ptr_root->GetRightNode(), isTraining);
     if(str_right.empty()){
         str_right = NO_RIGHT_CHILD_FLAG;
     }
-    CountValue(root_str);
-    CountRule(std::make_pair(root_str, std::make_pair(str_left, str_right)));
+    //just count the value in the training mode;
+    if(isTraining){
+        CountValue(root_str);
+        CountRule(std::make_pair(root_str, std::make_pair(str_left, str_right)));
+    }
     return root_str;
 }
 
@@ -116,29 +119,4 @@ void PCFG::SaveModel(std::string model_file) {
         ofs << (*it).second;
         ofs << "\n";
     }
-}
-
-void PCFG::ReadModel(std::string model_file) {
-    std::ifstream ifs(model_file);
-    std::string str;
-    while (std::getline(ifs,str)){
-        std::string tag1, tag2, tag3;
-        double weight;
-        std::stringstream ss(str);
-        ss >> tag1;
-        ss >> tag2;
-        ss >> tag3;
-        ss >> weight;
-        PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2,tag3));
-        ptr_rule_weight_map_->insert(std::make_pair(rule,weight));
-    }
-}
-
-void PCFG::Decoding(const char *file_name) {
-    ReadModel(MODEL_FILE);
-    CKY();
-}
-
-void PCFG::CKY() {
-
 }

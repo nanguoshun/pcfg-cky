@@ -19,16 +19,12 @@ public:
     void CountRule(PCFG_Rule rule);
     void CalcWeight();
     void SaveModel(std::string model_file);
-    void Decoding(const char *file_name);
-    void ReadModel(std::string model_file);
-    void CKY();
-    std::string IterationTree(Node *ptr_root);
+    std::string IterationTree(Node *ptr_root, bool isTraining);
 private:
     std::vector<BinaryTree *> tree_vector_;
     Rule_Map *ptr_rule_cout_map_;
     Element_Map *ptr_element_cout_map_;
     Rule_Weight *ptr_rule_weight_map_;
-
 };
 
 #endif //PCFG_PCFG_H
