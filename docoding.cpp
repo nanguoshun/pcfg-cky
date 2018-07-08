@@ -8,8 +8,6 @@ Decoder::Decoder() {
     ptr_rule_weight_map_ = new Rule_Weight_Map;
     ptr_cky_score_map_ = new CKY_Score_Map;
     ptr_non_terminator_map_ = new std::unordered_map<std::string, int>;
-    isFirstWord_ = true;
-
 }
 
 Decoder::~Decoder() {
@@ -27,7 +25,11 @@ void Decoder::GenerateNonTerminatorMap() {
         }
     }
 }
-
+/**
+ * read the weight of each rule from a file generated in training phase.
+ *
+ * @param model_file
+ */
 void Decoder::ReadModel(std::string model_file) {
     std::ifstream ifs(model_file);
     std::string str;
@@ -47,6 +49,13 @@ void Decoder::ReadModel(std::string model_file) {
     }
 }
 
+/**
+ * Extract in an iteration manner and then write to a file to faciliate parsing.
+ *
+ * @param ptr_root
+ * @param ofs
+ * @return
+ */
 std::string Decoder::IterationExtract(Node *ptr_root, std::ofstream *ofs) {
     if (NULL == ptr_root) {
         //return empty string;
@@ -66,18 +75,14 @@ std::string Decoder::IterationExtract(Node *ptr_root, std::ofstream *ofs) {
 }
 
 void Decoder::SaveSentenceFile(std::string root_str, std::ofstream *ofs) {
-    /*if (isFirstWord_) {
-        isFirstWord_ = false;
-    } else {
-        if (root_str != STOP_STRING) {
-            (*ofs) << SPACE_STRING;
-        }
-    }*/
     (*ofs) << root_str;
     (*ofs) << SPACE_STRING;
 }
 
-
+/**
+ * Init CKY score, each \pi(i, i, X) is set by P(X--> x_i)
+ * @param ptr_x_vector: the parsing sentence.
+ */
 void Decoder::InitCKY(std::vector<std::string> *ptr_x_vector) {
     int size = ptr_x_vector->size();
     for (int i = 0; i < size; ++i) {
@@ -102,7 +107,7 @@ void Decoder::InitCKY(std::vector<std::string> *ptr_x_vector) {
 /**
  * CKY main body.
  *
- * @param ptr_x_vector
+ * @param ptr_x_vector: the parsing sentence.
  */
 void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
     int size = ptr_x_vector->size();
@@ -121,8 +126,10 @@ void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
     }
 }
 
-/*
- *  The first choice of CKY, put the rule and weight of X->YZ to a vector.
+/**
+ * Put the rule and weight of X->YZ to a vector, which is the first choice of CKY when calculating the maximum score.
+ * @param x_str : the rule X.
+ * @param rule_vector: The rules that start with the rule X.
  */
 void Decoder::GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector) {
     for (auto itt = ptr_rule_weight_map_->begin(); itt != ptr_rule_weight_map_->end(); ++itt) {
@@ -138,8 +145,15 @@ void Decoder::GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector)
         }
     }
 }
-
-
+/**
+ * Get the Max score for each \pi(i, j, X);
+ * @param i
+ * @param j
+ * @param x_str: X rule
+ * @param rule_vector: the rules that start with the X rule
+ * @param ptr_x_vector: the parsing sentence.
+ * @return
+ */
 double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_Weight_Vector &rule_vector,
                             std::vector<std::string> *ptr_x_vector) {
     double max_score = NEGATIVE_VALUE;
@@ -154,6 +168,7 @@ double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_W
             CKY_Tuple cky_tuple_z = std::make_pair(std::make_pair(s + 1, j), z_str);
             double score_i_s_y = ptr_cky_score_map_->find(cky_tuple_y)->second;
             double score_s_j_z = ptr_cky_score_map_->find(cky_tuple_z)->second;
+            //calculation in log space;
             double cky_score = std::log(weight_x_yz) + score_i_s_y + score_s_j_z;
             if (cky_score > max_score) {
                 max_score = cky_score;
@@ -167,9 +182,13 @@ double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_W
               << max_score << ". the left and right childs are: " << cky_tuple_y_max.second << ","
               << cky_tuple_z_max.second << std::endl;
 #endif
+    cky_tuple_y_max
     return max_score;
 }
-
+/**
+ * Extracting a complete sentence in a PTB format to faciliate parsing.
+ * @param file_name
+ */
 void Decoder::ExtractSentenceFile(const char *file_name) {
     std::ofstream ofs(SENTENCE_FILE);
     std::ifstream ifs(file_name);
@@ -182,7 +201,6 @@ void Decoder::ExtractSentenceFile(const char *file_name) {
         Node *ptr_root = (*it)->GetRootNode();
         IterationExtract(ptr_root, &ofs);
         ofs << "\n";
-        isFirstWord_ = true;
     }
 }
 
@@ -201,12 +219,5 @@ void Decoder::Decoding(const char *test_file_name) {
         }
         InitCKY(&str_vector);
         CKY(&str_vector);
-        /*
-        for(int i=0; i<ptr_rule_weight_map_->size(); ++i){
-            std::vector<std::vector<Point>> *pscore_matrix = new std::vector<std::vector<Point>>;
-            score.push_back(*pscore_matrix);
-        }
-        InitCKY(&str_vector, &score);
-        std::cout << std::endl;*/
     }
 }
