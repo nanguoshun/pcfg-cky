@@ -19,14 +19,16 @@ public:
     void ReadModel(std::string model_file);
     void GenerateNonTerminatorMap();
     void ReadSentence(std::string sentence_file);
-    void InitCKY(std::vector<std::string> *ptr_vector, CKY_Score *ptr_CKY_score);
+    void InitCKY(std::vector<std::string> *ptr_vector, CKY_Tuple *ptr_CKY_score);
     void InitScore();
     void InitCKY(std::vector<std::string> *ptr_x_vector);
     void CKY(std::vector<std::string> *ptr_x_vector);
+    void GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector);
+    double CalcMaxRule(int i, int j, const std::string &x_str,const Rule_Weight_Vector &rule_vector,std::vector<std::string> *ptr_x_vector);
 private:
-    Rule_Weight *ptr_rule_weight_map_;
+    Rule_Weight_Map *ptr_rule_weight_map_;
     std::unordered_map<std::string, int> *ptr_non_terminator_map_;
-    CKY_Map *ptr_cky_score_map_;
+    CKY_Score_Map *ptr_cky_score_map_;
     std::vector<BinaryTree *> tree_vector_;
     bool isFirstWord_;
 };

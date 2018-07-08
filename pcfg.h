@@ -24,7 +24,7 @@ private:
     std::vector<BinaryTree *> tree_vector_;
     Rule_Map *ptr_rule_cout_map_;
     Element_Map *ptr_element_cout_map_;
-    Rule_Weight *ptr_rule_weight_map_;
+    Rule_Weight_Map *ptr_rule_weight_map_;
 };
 
 #endif //PCFG_PCFG_H

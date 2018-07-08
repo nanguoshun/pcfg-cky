@@ -24,14 +24,17 @@ const std::string TRAINING_DATA_SET_FILE = "ptb-binary.train";
 const std::string TESTING_DATA_SET_FILE = "ptr-binary.test";
 const std::string SENTENCE_FILE = "sentence.txt";
 const std::string STOP_STRING = ".";
+const double NEGATIVE_VALUE = -1000;
 
 #define IF_DEBUG_ = 1;
 
 typedef std::pair<std::string, std::pair<std::string, std::string>> PCFG_Rule;
+typedef std::vector<std::pair<PCFG_Rule, double>> Rule_Weight_Vector;
 typedef std::unordered_map<PCFG_Rule, int, boost::hash<PCFG_Rule>> Rule_Map;
 typedef std::unordered_map<std::string, int> Element_Map;
-typedef std::unordered_map<PCFG_Rule, double, boost::hash<PCFG_Rule>> Rule_Weight;
-typedef std::pair<std::pair<int,int>, std::string> CKY_Score;
-typedef std::unordered_map<CKY_Score, double, boost::hash<CKY_Score>> CKY_Map;
+typedef std::unordered_map<PCFG_Rule, double, boost::hash<PCFG_Rule>> Rule_Weight_Map;
+typedef std::pair<std::pair<int,int>, std::string> CKY_Tuple;
+typedef std::pair<CKY_Tuple, double> CKY_Score_Pair;
+typedef std::unordered_map<CKY_Tuple, double, boost::hash<CKY_Tuple>> CKY_Score_Map;
 
 #endif //PCFG_COMMON_H

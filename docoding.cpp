@@ -41,9 +41,11 @@ void Decoder::ReadModel(std::string model_file) {
         ss >> weight;
         PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2, tag3));
         ptr_rule_weight_map_->insert(std::make_pair(rule, weight));
+#ifdef IF_DEBUG_
+        std::cout << tag1 << " "<< tag2 <<" "<<tag3<<": "<<weight<<std::endl;
+#endif
     }
 }
-
 
 std::string Decoder::IterationExtract(Node *ptr_root, std::ofstream *ofs) {
     if (NULL == ptr_root) {
@@ -64,14 +66,15 @@ std::string Decoder::IterationExtract(Node *ptr_root, std::ofstream *ofs) {
 }
 
 void Decoder::SaveSentenceFile(std::string root_str, std::ofstream *ofs) {
-    if (isFirstWord_) {
+    /*if (isFirstWord_) {
         isFirstWord_ = false;
     } else {
         if (root_str != STOP_STRING) {
             (*ofs) << SPACE_STRING;
         }
-    }
+    }*/
     (*ofs) << root_str;
+    (*ofs) << SPACE_STRING;
 }
 
 
@@ -82,14 +85,14 @@ void Decoder::InitCKY(std::vector<std::string> *ptr_x_vector) {
         for (auto it = ptr_non_terminator_map_->begin(); it != ptr_non_terminator_map_->end(); ++it) {
             std::string x_str = (*it).first;
             CKY_Tuple cky_tuple = std::make_pair(pos_pair, x_str);
-            double weight = 0;
+            double weight = NEGATIVE_VALUE;
             //check the weight of the rule;
             std::string x_i = (*ptr_x_vector)[i];
             PCFG_Rule rule = std::make_pair(x_str, std::make_pair(x_i, NO_RIGHT_CHILD_FLAG));
             if (ptr_rule_weight_map_->find(rule) != ptr_rule_weight_map_->end()) {
                 weight = ptr_rule_weight_map_->find(rule)->second;
                 //calculation in log space;
-//                 weight = std::log(weight);
+                weight = std::log(weight);
             }
             ptr_cky_score_map_->insert(std::make_pair(cky_tuple, weight));
         }
@@ -104,11 +107,11 @@ void Decoder::InitCKY(std::vector<std::string> *ptr_x_vector) {
 void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
     int size = ptr_x_vector->size();
     for (int l = 1; l < size; ++l) {
-        for (int i = 0; i < size - l - 1; ++i) {
+        for (int i = 0; i <= size - l -1; ++i) {
             int j = i + l;
             for (auto it = ptr_non_terminator_map_->begin(); it != ptr_non_terminator_map_->end(); ++it) {
                 std::string x_str = (*it).first;
-                CKY_Tuple cky_tuple = std::make_pair(std::make_pair(i,j),x_str);
+                CKY_Tuple cky_tuple = std::make_pair(std::make_pair(i, j), x_str);
                 Rule_Weight_Vector rule_vector;
                 GetRuleWeight(x_str, rule_vector);
                 double max_score = CalcMaxRule(i, j, x_str, rule_vector, ptr_x_vector);
@@ -136,8 +139,10 @@ void Decoder::GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector)
     }
 }
 
-double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_Weight_Vector &rule_vector,std::vector<std::string> *ptr_x_vector) {
-    double max_score = 0;
+
+double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_Weight_Vector &rule_vector,
+                            std::vector<std::string> *ptr_x_vector) {
+    double max_score = NEGATIVE_VALUE;
     CKY_Tuple cky_tuple_y_max;
     CKY_Tuple cky_tuple_z_max;
     for (auto itt = rule_vector.begin(); itt != rule_vector.end(); ++itt) {
@@ -149,7 +154,7 @@ double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_W
             CKY_Tuple cky_tuple_z = std::make_pair(std::make_pair(s + 1, j), z_str);
             double score_i_s_y = ptr_cky_score_map_->find(cky_tuple_y)->second;
             double score_s_j_z = ptr_cky_score_map_->find(cky_tuple_z)->second;
-            double cky_score = weight_x_yz * score_i_s_y * score_s_j_z;
+            double cky_score = std::log(weight_x_yz) + score_i_s_y + score_s_j_z;
             if (cky_score > max_score) {
                 max_score = cky_score;
                 cky_tuple_y_max = cky_tuple_y;
@@ -158,47 +163,12 @@ double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_W
         }
     }
 #ifdef IF_DEBUG_
-    std::cout << "the max score for " << (*ptr_x_vector)[i] <<","<<(*ptr_x_vector)[j]<<","<<x_str<<" is: "<< max_score<< ". the left and right childs are: "<<cky_tuple_y_max.second<<","<<cky_tuple_z_max.second<<std::endl;
+    std::cout << "the max score for " << (*ptr_x_vector)[i] << "," << (*ptr_x_vector)[j] << "," << x_str << " is: "
+              << max_score << ". the left and right childs are: " << cky_tuple_y_max.second << ","
+              << cky_tuple_z_max.second << std::endl;
 #endif
     return max_score;
 }
-
-/**
- *
- * @param ptr_vector
- * @param ptr_CKY_score
- */
-/*
-void Decoder::InitCKY(std::vector<std::string> *ptr_x_vector, CKY_Tuple *ptr_CKY_score) {
-   int size = ptr_x_vector->size();
-   int weight_id = 0;
-   for(auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
-       std::string tag1 = (*it).first.first;
-       for (int i=0; i<ptr_x_vector->size(); ++i) {
-           //create row
-           std::vector<Point> * ptr_score_vector = new std::vector<Point>;
-           (*ptr_CKY_score)[weight_id].push_back(*ptr_score_vector);
-           for (int j= i; j<; ++ittt) {
-               Point point;
-               point.x = i;
-               point.y = j;
-               point.weight = 0;
-               if(i==j){
-                   std::string tag2 = (*ptr_x_vector)[i];
-                   PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2, NO_RIGHT_CHILD_FLAG));
-                   if (ptr_rule_weight_map_->find(rule) != ptr_rule_weight_map_->end()) {
-                       double weight = ptr_rule_weight_map_->find(rule)->second;
-                       point.weight = weight;
-                   }
-               }
-               //create each point in each row.
-               (*ptr_CKY_score)[weight_id][i].push_back(point);
-               j++;
-           }
-       }
-     weight_id++;
-   }
-}*/
 
 void Decoder::ExtractSentenceFile(const char *file_name) {
     std::ofstream ofs(SENTENCE_FILE);

@@ -16,7 +16,7 @@ PCFG::~PCFG() {
 void PCFG::Allocate() {
     ptr_rule_cout_map_ = new Rule_Map;
     ptr_element_cout_map_ = new Element_Map;
-    ptr_rule_weight_map_ = new Rule_Weight;
+    ptr_rule_weight_map_ = new Rule_Weight_Map;
 }
 
 void PCFG::BuildTreeFromPTB(const char *file_name) {
@@ -109,7 +109,7 @@ void PCFG::CalcWeight() {
 
 void PCFG::SaveModel(std::string model_file) {
     std::ofstream ofs(model_file);
-    for(Rule_Weight::iterator it = ptr_rule_weight_map_->begin(); it!=ptr_rule_weight_map_->end();++it){
+    for(Rule_Weight_Map::iterator it = ptr_rule_weight_map_->begin(); it!=ptr_rule_weight_map_->end();++it){
         ofs << (*it).first.first;
         ofs << " ";
         ofs << (*it).first.second.first;
