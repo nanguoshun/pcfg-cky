@@ -12,14 +12,18 @@ class BinaryTree{
 public:
     BinaryTree(std::string str);
     ~BinaryTree();
-    void Delete(Node *ptr_node);
+    void ConvertToStringVector(std::string str);
     Node * BuildBinaryTree(std::string str);
     int FindNextBracketIndex(std::string str);
-    void PrintTree(Node *ptr_node);
+    bool PrintTree(Node *ptr_node);
     Node * GetRootNode();
+    std::vector<std::string> *GetXVector();
 private:
     Node *ptr_root_;
     std::vector<Node *> node_vector_;
+    std::vector<std::string> *ptr_str_vector_;
+    std::vector<std::string> *ptr_x_vector_;
+    int index_offset_;
 };
 
 #endif //PCFG_BINARYTREE_H

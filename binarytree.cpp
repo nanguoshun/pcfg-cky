@@ -5,13 +5,30 @@
 #include "binarytree.h"
 
 BinaryTree::BinaryTree(std::string str) {
+    ptr_str_vector_ = new std::vector<std::string>;
+    ptr_x_vector_ = new std::vector<std::string>;
+    ConvertToStringVector(str);
+    index_offset_ = 0;
     ptr_root_ = BuildBinaryTree(str);
-   // PrintTree(ptr_root_);
+    //PrintTree(ptr_root_);
 }
 
 BinaryTree::~BinaryTree() {
+    delete ptr_str_vector_;
+    delete ptr_x_vector_;
     for(std::vector<Node *>::iterator it = node_vector_.begin(); it!=node_vector_.end();++it){
         delete(*it);
+    }
+}
+
+void BinaryTree::ConvertToStringVector(std::string str) {
+    std::stringstream ss(str);
+    std::string str_tmp;
+    while(ss >> str_tmp){
+        ptr_str_vector_->push_back(str_tmp);
+#ifdef IF_DEBUG__
+        std::cout << "the vector is"<< str_tmp <<std::endl;
+#endif
     }
 }
 
@@ -66,17 +83,21 @@ int BinaryTree::FindNextBracketIndex(std::string str) {
     return -1;
 }
 
-void BinaryTree::PrintTree(Node *ptr_node) {
+bool BinaryTree::PrintTree(Node *ptr_node) {
     if (ptr_node == NULL) {
-        return;
+        return NULL;
     }
-    std::cout << ptr_node->GetData() << std::endl;
+//    std::cout << ptr_node->GetData() << " : "<<ptr_node->GetStartIndex()<<","<<ptr_node->GetEndIndex()<< std::endl;
     PrintTree(ptr_node->GetLeftNode());
     PrintTree(ptr_node->GetRightNode());
 }
 
 Node *BinaryTree::GetRootNode() {
     return ptr_root_;
+}
+
+std::vector<std::string>* BinaryTree::GetXVector() {
+    return ptr_x_vector_;
 }
 
 

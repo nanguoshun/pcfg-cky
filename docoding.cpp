@@ -6,16 +6,45 @@
 
 Decoder::Decoder() {
     ptr_rule_weight_map_ = new Rule_Weight_Map;
+    ptr_binary_rule_weight_map_ = new Rule_Weight_Map;
     ptr_cky_score_map_ = new CKY_Score_Map;
     ptr_non_terminator_map_ = new std::unordered_map<std::string, int>;
+    ptr_max_cky_score_map_ = new MAX_CKY_Sore_Map;
+    ptr_parsing_map_ = new std::unordered_map<CKY_Tuple, int, boost::hash<CKY_Tuple>>;
+    ptr_groundtruth_map_ = new std::unordered_map<CKY_Tuple, int, boost::hash<CKY_Tuple>>;
+    ptr_phrase_level_rule_map_ = new std::unordered_map<std::string, int>;
+    result_numerator_ = 0;
+    result_denominator_ = 0;
+    start_index_ = 0;
+    end_index_ = 0;
+    line_index_ = 0;
 }
 
 Decoder::~Decoder() {
     delete ptr_rule_weight_map_;
     delete ptr_cky_score_map_;
+    delete ptr_non_terminator_map_;
+    delete ptr_max_cky_score_map_;
+    delete ptr_parsing_map_;
+    delete ptr_groundtruth_map_;
+    delete ptr_binary_rule_weight_map_;
+    delete ptr_phrase_level_rule_map_;
+    for(std::vector<Node *>::iterator it = node_vector_.begin(); it!=node_vector_.end();++it){
+        delete(*it);
+    }
 }
 
-void Decoder::GenerateNonTerminatorMap() {
+void Decoder::GeneratePhraseLevelRuleVector(const std::string file_name) {
+    std::ifstream ifs(file_name);
+    std::string str;
+    int index = 0;
+    while (std::getline(ifs,str)){
+        ptr_phrase_level_rule_map_->insert(std::make_pair(str,index));
+        index++;
+    }
+}
+
+void Decoder::GenerateNonTerminatorMapFromWeighMap() {
     int i = 0;
     for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
         std::string non_terminator_str = (*it).first.first;
@@ -43,9 +72,12 @@ void Decoder::ReadModel(std::string model_file) {
         ss >> weight;
         PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2, tag3));
         ptr_rule_weight_map_->insert(std::make_pair(rule, weight));
+        if(ptr_phrase_level_rule_map_->find(tag1) != ptr_phrase_level_rule_map_->end()){
+            ptr_binary_rule_weight_map_->insert(std::make_pair(rule, weight));
 #ifdef IF_DEBUG_
-        std::cout << tag1 << " "<< tag2 <<" "<<tag3<<": "<<weight<<std::endl;
+            std::cout << tag1 << " "<< tag2 <<" "<<tag3<<": "<<weight<<std::endl;
 #endif
+        }
     }
 }
 
@@ -114,6 +146,7 @@ void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
     for (int l = 1; l < size; ++l) {
         for (int i = 0; i <= size - l -1; ++i) {
             int j = i + l;
+            std::string max_str;
             for (auto it = ptr_non_terminator_map_->begin(); it != ptr_non_terminator_map_->end(); ++it) {
                 std::string x_str = (*it).first;
                 CKY_Tuple cky_tuple = std::make_pair(std::make_pair(i, j), x_str);
@@ -121,7 +154,16 @@ void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
                 GetRuleWeight(x_str, rule_vector);
                 double max_score = CalcMaxRule(i, j, x_str, rule_vector, ptr_x_vector);
                 ptr_cky_score_map_->insert(std::make_pair(cky_tuple, max_score));
+#ifdef IF_DEBUG__
+                if(max_score > max){
+                    max = max_score;
+                    max_str = x_str;
+                }
+#endif
             }
+#ifdef IF_DEBUG__
+    std::cout << (*ptr_x_vector)[i] << "," << (*ptr_x_vector)[j] << "," << max_str << " is: " << max<<std::endl;
+#endif
         }
     }
 }
@@ -132,7 +174,7 @@ void Decoder::CKY(std::vector<std::string> *ptr_x_vector) {
  * @param rule_vector: The rules that start with the rule X.
  */
 void Decoder::GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector) {
-    for (auto itt = ptr_rule_weight_map_->begin(); itt != ptr_rule_weight_map_->end(); ++itt) {
+    for (auto itt = ptr_binary_rule_weight_map_->begin(); itt != ptr_binary_rule_weight_map_->end(); ++itt) {
         std::string xx_str = (*itt).first.first;
         if (x_str == xx_str) {
             if ((*itt).first.second.second != NO_RIGHT_CHILD_FLAG) {
@@ -145,6 +187,7 @@ void Decoder::GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector)
         }
     }
 }
+
 /**
  * Get the Max score for each \pi(i, j, X);
  * @param i
@@ -159,9 +202,10 @@ double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_W
     double max_score = NEGATIVE_VALUE;
     CKY_Tuple cky_tuple_y_max;
     CKY_Tuple cky_tuple_z_max;
+    int split_point = 0;
     for (auto itt = rule_vector.begin(); itt != rule_vector.end(); ++itt) {
-        std::string y_str = (*itt).first.second.first;
-        std::string z_str = (*itt).first.second.second;
+        std::string y_str =  (*itt).first.second.first;
+        std::string z_str =  (*itt).first.second.second;
         double weight_x_yz = (*itt).second;
         for (int s = i; s < j; ++s) {
             CKY_Tuple cky_tuple_y = std::make_pair(std::make_pair(i, s), y_str);
@@ -174,17 +218,36 @@ double Decoder::CalcMaxRule(int i, int j, const std::string &x_str, const Rule_W
                 max_score = cky_score;
                 cky_tuple_y_max = cky_tuple_y;
                 cky_tuple_z_max = cky_tuple_z;
+                split_point = s;
             }
         }
     }
-#ifdef IF_DEBUG_
+#ifdef IF_DEBUG__
     std::cout << "the max score for " << (*ptr_x_vector)[i] << "," << (*ptr_x_vector)[j] << "," << x_str << " is: "
               << max_score << ". the left and right childs are: " << cky_tuple_y_max.second << ","
-              << cky_tuple_z_max.second << std::endl;
+              << cky_tuple_z_max.second << "/// the length is: "<<ptr_x_vector->size()<< ", the split point is: "<<split_point<<std::endl;
 #endif
-    cky_tuple_y_max
+    InsertMaxScoreMap(i,j,x_str,cky_tuple_y_max,cky_tuple_z_max,split_point);
     return max_score;
 }
+
+/**
+ * Save the the max info for construction of a tree.
+ *
+ * @param i
+ * @param j
+ * @param x_str: X
+ * @param max_score
+ * @param cky_tuple_y_max: left_child
+ * @param cky_tuple_z_max: right_child
+ * @param split_point
+ */
+void Decoder::InsertMaxScoreMap(int i, int j, const std::string &x_str, CKY_Tuple &cky_tuple_y_max, CKY_Tuple &cky_tuple_z_max, int split_point){
+    CKY_Tuple cky_tuple = std::make_pair(std::make_pair(i, j), x_str);
+    Child_Split child_split = std::make_pair(std::make_pair(cky_tuple_y_max.second,cky_tuple_z_max.second),split_point);
+    ptr_max_cky_score_map_->insert(std::make_pair(cky_tuple,child_split));
+}
+
 /**
  * Extracting a complete sentence in a PTB format to faciliate parsing.
  * @param file_name
@@ -204,20 +267,141 @@ void Decoder::ExtractSentenceFile(const char *file_name) {
     }
 }
 
+void Decoder::Clear() {
+    ptr_cky_score_map_->clear();
+    ptr_max_cky_score_map_->clear();
+    ptr_parsing_map_->clear();
+    ptr_groundtruth_map_->clear();
+    start_index_ = 0;
+    end_index_ = 0;
+}
+
+void Decoder::ConstructTree(const std::vector<std::string> &x_vector) {
+    map_index_ = 0;
+    Node *ptr_root_node = new Node(ROOT_NODE);
+    IterationTree(x_vector, ptr_root_node, 0, x_vector.size()-1);
+}
+
+void Decoder::IterationTree(const std::vector<std::string> &x_vector, Node *pnode, int i, int j) {
+    pnode->SetStartIndex(i);
+    pnode->SetEndIndex(j);
+    int split_point = 0;
+    std::string left_str;
+    std::string right_str;
+    std::string parent_str = pnode->GetData();
+    CKY_Tuple tuple = std::make_pair(std::make_pair(i,j),parent_str);
+    if(ptr_max_cky_score_map_->find(tuple) == ptr_max_cky_score_map_->end()){
+        //if it is the last non-terminator.
+        Node *ptr_left_node = new Node(x_vector[i]);
+        pnode->SetLeftNode(ptr_left_node);
+        pnode->SetStartIndex(i);
+        pnode->SetEndIndex(i);
+        //insert into map
+        ptr_parsing_map_->insert(std::make_pair(tuple,map_index_));
+        map_index_++;
+        return;
+    } else{
+        split_point  = ptr_max_cky_score_map_->find(tuple)->second.second;
+        left_str = ptr_max_cky_score_map_->find(tuple)->second.first.first;
+        right_str = ptr_max_cky_score_map_->find(tuple)->second.first.second;
+        Node *ptr_left_node = new Node(left_str);
+        Node *ptr_right_node = new Node(right_str);
+        pnode->SetLeftNode(ptr_left_node);
+        pnode->SetRightNode(ptr_right_node);
+        IterationTree(x_vector,ptr_left_node,i,split_point);
+        IterationTree(x_vector,ptr_right_node,split_point+1,j);
+        //insert into map
+        ptr_parsing_map_->insert(std::make_pair(tuple,map_index_));
+        map_index_++;
+    }
+}
+
+std::pair<std::string, int> Decoder::IterationGroundTruthTree(Node *ptr_root, bool isTraining,
+                                                              std::vector<std::string> *p_x_vector) {
+    if (NULL == ptr_root) {
+        //return empty string;
+        std::pair<std::string, int> pair = std::make_pair(TERMINATOR_FLAG,NEGATIVE_VALUE);
+        return pair;
+    }
+    std::string root_str = ptr_root->GetData();
+    std::pair<std::string, int>  pair_left = IterationGroundTruthTree(ptr_root->GetLeftNode(), isTraining, p_x_vector);
+    if(pair_left.second == NEGATIVE_VALUE){
+        //the terminator don't have left and right child.
+#ifdef IF_DEBUG_
+        std::cout << root_str << " ";
+#endif
+        p_x_vector->push_back(root_str);
+        std::pair<std::string, int> pair = std::make_pair(root_str,start_index_);
+        ptr_root->SetStartIndex(start_index_);
+        start_index_ ++;
+        return pair;
+    }
+    ptr_root->SetStartIndex(pair_left.second);
+    std::pair<std::string, int> pair_right = IterationGroundTruthTree(ptr_root->GetRightNode(), isTraining, p_x_vector);
+    if(pair_right.second == NEGATIVE_VALUE){
+        pair_right = std::make_pair(NO_RIGHT_CHILD_FLAG,end_index_);
+        end_index_++;
+    }
+    ptr_root->SetEndIndex(pair_right.second);
+    //insert into a map for calculation the precission and recall.
+    if(ptr_non_terminator_map_->find(root_str)!=ptr_non_terminator_map_->end()){
+        CKY_Tuple tuple= std::make_pair(std::make_pair(pair_left.second,pair_right.second),root_str);
+        ptr_groundtruth_map_->insert(std::make_pair(tuple,map_index_));
+    }
+    return pair_left;
+}
+
+void Decoder::ParsePTB(std::string str) {
+        BinaryTree *ptree = new BinaryTree(str);
+        map_index_ = 0;
+        std::pair<std::string, int> pair = IterationGroundTruthTree(ptree->GetRootNode(), true, ptree->GetXVector());
+        ptree->GetRootNode()->SetEndIndex(ptree->GetXVector()->size() -1);
+        if(ptr_non_terminator_map_->find(ptree->GetRootNode()->GetData())!=ptr_non_terminator_map_->end()){
+            CKY_Tuple tuple= std::make_pair(std::make_pair(0,ptree->GetXVector()->size()-1),ptree->GetRootNode()->GetData());
+            ptr_groundtruth_map_->insert(std::make_pair(tuple,map_index_));
+        }
+        std::cout << std::endl;
+        delete ptree;
+}
+
+void Decoder::Compare() {
+    for(auto it = ptr_parsing_map_->begin(); it != ptr_parsing_map_->end(); ++it){
+#ifdef IF_DEBUG_
+        std::cout << (*it).first.first.first << ";"<<(*it).first.first.second <<";"<<(*it).first.second <<std::endl;
+#endif
+        if(ptr_groundtruth_map_->find((*it).first) != ptr_groundtruth_map_->end()){
+            result_numerator_ ++;
+        }
+    }
+    result_denominator_ += ptr_parsing_map_->size();
+    std::cout << line_index_<<" th line"<<"the numerrator and denominationator are:"<<result_numerator_ <<","<<result_denominator_<<std::endl;
+}
+
 void Decoder::Decoding(const char *test_file_name) {
+    GeneratePhraseLevelRuleVector(PHRASE_LEVEL_FILE);
     ReadModel(MODEL_FILE);
     ExtractSentenceFile(test_file_name);
-    GenerateNonTerminatorMap();
+    GenerateNonTerminatorMapFromWeighMap();
     std::ifstream ifs(SENTENCE_FILE);
-    std::string str;
-    while (std::getline(ifs, str)) {
+    std::ifstream ifs_test(test_file_name);
+    std::string str_x;
+    std::string str_test;
+    while (std::getline(ifs, str_x) && std::getline(ifs_test, str_test)) {
+        std::cout << "calc the "<<line_index_ <<" th sentence"<< std::endl;
         std::vector<std::string> str_vector;
-        std::stringstream ss(str);
+        std::stringstream ss(str_x);
         std::string tmp;
         while (ss >> tmp) {
             str_vector.push_back(tmp);
         }
         InitCKY(&str_vector);
         CKY(&str_vector);
+        ConstructTree(str_vector);
+        ParsePTB(str_test);
+        Compare();
+        Clear();
+        line_index_ ++;
     }
+    double precission = (double)result_numerator_ / (double)result_denominator_;
+    std::cout << "precission is" << precission<< std::endl;
 }

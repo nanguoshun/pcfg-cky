@@ -14,11 +14,16 @@ public:
     void SetRightNode(Node *ptr_node);
     Node * GetLeftNode();
     Node * GetRightNode();
+    void SetStartIndex(int start);
+    void SetEndIndex(int stop);
+    int GetStartIndex();
+    int GetEndIndex();
 private:
     std::string value_;
-    int count_;
     Node *ptr_l_node_;
     Node *ptr_r_node_;
+    int start_index_;
+    int end_index_;
 };
 
 #endif //PCFG_NODE_H

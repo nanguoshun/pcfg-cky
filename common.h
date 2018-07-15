@@ -23,9 +23,11 @@ const std::string NO_RIGHT_CHILD_FLAG = "%%%";
 const std::string TRAINING_DATA_SET_FILE = "ptb-binary.train";
 const std::string TESTING_DATA_SET_FILE = "ptr-binary.test";
 const std::string SENTENCE_FILE = "sentence.txt";
+const std::string PHRASE_LEVEL_FILE = "phraselevel.txt";
 const std::string STOP_STRING = ".";
-const double NEGATIVE_VALUE = -1000;
-
+const double NEGATIVE_VALUE = -100000;
+const std::string ROOT_NODE = "ROOT";
+const std::string TERMINATOR_FLAG = "TERNMINATOR";
 #define IF_DEBUG_ = 1;
 
 typedef std::pair<std::string, std::pair<std::string, std::string>> PCFG_Rule;
@@ -34,7 +36,11 @@ typedef std::unordered_map<PCFG_Rule, int, boost::hash<PCFG_Rule>> Rule_Map;
 typedef std::unordered_map<std::string, int> Element_Map;
 typedef std::unordered_map<PCFG_Rule, double, boost::hash<PCFG_Rule>> Rule_Weight_Map;
 typedef std::pair<std::pair<int,int>, std::string> CKY_Tuple;
-typedef std::pair<CKY_Tuple, double> CKY_Score_Pair;
 typedef std::unordered_map<CKY_Tuple, double, boost::hash<CKY_Tuple>> CKY_Score_Map;
+//typedef std::pair<CKY_Tuple, double> CKY_Score_Pair;
+//typedef std::pair<CKY_Score_Pair,std::pair<std::string, std::string>> MAX_CKY_Pair;
+typedef std::pair<std::pair<std::string, std::string>,int> Child_Split;
+//typedef std::unordered_map<MAX_CKY_Pair, int, boost::hash<MAX_CKY_Pair>> MAX_CKY_Sore_Map;
+typedef std::unordered_map<CKY_Tuple, Child_Split, boost::hash<CKY_Tuple>> MAX_CKY_Sore_Map;
 
 #endif //PCFG_COMMON_H

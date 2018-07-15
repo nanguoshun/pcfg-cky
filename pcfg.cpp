@@ -11,12 +11,14 @@ PCFG::~PCFG() {
     delete ptr_rule_cout_map_;
     delete ptr_element_cout_map_;
     delete ptr_rule_weight_map_;
+    delete ptr_non_terminator_map_;
 }
 
 void PCFG::Allocate() {
     ptr_rule_cout_map_ = new Rule_Map;
     ptr_element_cout_map_ = new Element_Map;
     ptr_rule_weight_map_ = new Rule_Weight_Map;
+    ptr_non_terminator_map_ = new std::unordered_map<std::string, int>;
 }
 
 void PCFG::BuildTreeFromPTB(const char *file_name) {
@@ -28,36 +30,55 @@ void PCFG::BuildTreeFromPTB(const char *file_name) {
     }
 }
 
+void PCFG::GenerateNonTerminatorMap() {
+    int i = 0;
+    for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
+        std::string non_terminator_str = (*it).first.first;
+        if (ptr_non_terminator_map_->find(non_terminator_str) == ptr_non_terminator_map_->end()) {
+            ptr_non_terminator_map_->insert(std::make_pair(non_terminator_str, i));
+            ++i;
+        }
+    }
+}
+
 void PCFG::SupervisedTraining(const char *file_name) {
     BuildTreeFromPTB(file_name);
     CountAll();
     CalcWeight();
     SaveModel(MODEL_FILE);
+    GenerateNonTerminatorMap();
+    for(auto it = tree_vector_.begin(); it!=tree_vector_.end();++it){
+        (*it)->PrintTree((*it)->GetRootNode());
+    }
 }
 
 void PCFG::CountAll() {
     for (std::vector<BinaryTree *>::iterator it = tree_vector_.begin(); it != tree_vector_.end(); ++it) {
-        Node *ptr_root = (*it)->GetRootNode();
-        IterationTree(ptr_root, true);
+        start_index_ = 0;
+        end_index_ = 0;
+ //       std::pair<std::string, int> pair = IterationTree((*it)->GetRootNode(), true, (*it)->GetXVector());
+   //     (*it)->GetRootNode()->SetEndIndex((*it)->GetXVector()->size() -1);
+        IterationTree((*it)->GetRootNode(),true,(*it)->GetXVector());
         std::cout << std::endl;
     }
 }
 
-std::string PCFG::IterationTree(Node *ptr_root, bool isTraining) {
+std::string PCFG::IterationTree(Node *ptr_root, bool isTraining, std::vector<std::string> *p_x_vector) {
     if (NULL == ptr_root) {
         //return empty string;
         return std::string();
     }
     std::string root_str = ptr_root->GetData();
-    std::string str_left = IterationTree(ptr_root->GetLeftNode(), isTraining);
+    std::string str_left = IterationTree(ptr_root->GetLeftNode(), isTraining, p_x_vector);
     if(str_left.empty()){
         //the terminator don't have left and right child.
 #ifdef IF_DEBUG_
         std::cout << root_str << " ";
 #endif
+        p_x_vector->push_back(root_str);
         return root_str;
     }
-    std::string str_right = IterationTree(ptr_root->GetRightNode(), isTraining);
+    std::string str_right = IterationTree(ptr_root->GetRightNode(), isTraining, p_x_vector);
     if(str_right.empty()){
         str_right = NO_RIGHT_CHILD_FLAG;
     }
@@ -68,6 +89,43 @@ std::string PCFG::IterationTree(Node *ptr_root, bool isTraining) {
     }
     return root_str;
 }
+
+
+/*
+std::pair<std::string, int> PCFG::IterationTree(Node *ptr_root, bool isTraining, std::vector<std::string> *p_x_vector) {
+    if (NULL == ptr_root) {
+        //return empty string;
+        std::pair<std::string, int> pair = std::make_pair(TERMINATOR_FLAG,NEGATIVE_VALUE);
+        return pair;
+    }
+    std::string root_str = ptr_root->GetData();
+    std::pair<std::string, int>  pair_left = IterationTree(ptr_root->GetLeftNode(), isTraining, p_x_vector);
+    if(pair_left.second == NEGATIVE_VALUE){
+        //the terminator don't have left and right child.
+#ifdef IF_DEBUG__
+        std::cout << root_str << " ";
+#endif
+        p_x_vector->push_back(root_str);
+        std::pair<std::string, int> pair = std::make_pair(root_str,start_index_);
+        ptr_root->SetStartIndex(start_index_);
+        start_index_ ++;
+        return pair;
+    }
+    ptr_root->SetStartIndex(pair_left.second);
+    std::pair<std::string, int> pair_right = IterationTree(ptr_root->GetRightNode(), isTraining, p_x_vector);
+    if(pair_right.second == NEGATIVE_VALUE){
+        pair_right = std::make_pair(NO_RIGHT_CHILD_FLAG,end_index_);
+        end_index_++;
+    }
+    ptr_root->SetEndIndex(pair_right.second);
+    //just count the value in the training mode;
+    if(isTraining){
+        CountValue(root_str);
+        CountRule(std::make_pair(root_str, std::make_pair(pair_left.first, pair_right.first)));
+    }
+    return pair_left;
+}
+*/
 
 void PCFG::CountValue(std::string str) {
     if (ptr_element_cout_map_->find(str) == ptr_element_cout_map_->end()) {
