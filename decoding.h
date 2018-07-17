@@ -47,7 +47,8 @@ private:
     std::unordered_map<CKY_Tuple, int, boost::hash<CKY_Tuple>> *ptr_parsing_map_;
     std::unordered_map<CKY_Tuple, int, boost::hash<CKY_Tuple>> *ptr_groundtruth_map_;
     int result_numerator_;
-    int result_denominator_;
+    int result_denominator_precision_;
+    int result_denominator_recall_;
     int line_index_;
     std::unordered_map<std::string, int> *ptr_phrase_level_rule_map_;
 };

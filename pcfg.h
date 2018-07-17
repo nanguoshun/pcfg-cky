@@ -22,13 +22,14 @@ public:
 //    std::pair<std::string, int> IterationTree(Node *ptr_root, bool isTraining,std::vector<std::string> *p_x_vector);
     std::string IterationTree(Node *ptr_root, bool isTraining, std::vector<std::string> *p_x_vector);
     void GenerateNonTerminatorMap();
+    void UnsupervisedTraining(const char *file_name);
 private:
     std::vector<BinaryTree *> tree_vector_;
     Rule_Map *ptr_rule_cout_map_;
     Element_Map *ptr_element_cout_map_;
     Rule_Weight_Map *ptr_rule_weight_map_;
-    int start_index_;
-    int end_index_;
+//    int start_index_;
+//    int end_index_;
     std::unordered_map<std::string, int> *ptr_non_terminator_map_;
 
 };

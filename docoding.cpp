@@ -14,7 +14,8 @@ Decoder::Decoder() {
     ptr_groundtruth_map_ = new std::unordered_map<CKY_Tuple, int, boost::hash<CKY_Tuple>>;
     ptr_phrase_level_rule_map_ = new std::unordered_map<std::string, int>;
     result_numerator_ = 0;
-    result_denominator_ = 0;
+    result_denominator_precision_ = 0;
+    result_denominator_recall_ = 0;
     start_index_ = 0;
     end_index_ = 0;
     line_index_ = 0;
@@ -55,7 +56,7 @@ void Decoder::GenerateNonTerminatorMapFromWeighMap() {
     }
 }
 /**
- * read the weight of each rule from a file generated in training phase.
+ * Read the weight of each rule from a file generated in training phase.
  *
  * @param model_file
  */
@@ -84,7 +85,7 @@ void Decoder::ReadModel(std::string model_file) {
 /**
  * Extract in an iteration manner and then write to a file to faciliate parsing.
  *
- * @param ptr_root
+ * @para
  * @param ofs
  * @return
  */
@@ -276,11 +277,27 @@ void Decoder::Clear() {
     end_index_ = 0;
 }
 
+/**
+ * build a binary tree for a sentence x_vector
+ * @param x_vector sentence
+ */
+
 void Decoder::ConstructTree(const std::vector<std::string> &x_vector) {
     map_index_ = 0;
     Node *ptr_root_node = new Node(ROOT_NODE);
     IterationTree(x_vector, ptr_root_node, 0, x_vector.size()-1);
 }
+
+/**
+ * Recursively build binary parsing tree and annotate the position for each
+ * non-terminator after CKY algorithm.
+ *
+ * @param x_vector
+ * @param pnode
+ * @param i
+ * @param j
+ *
+ */
 
 void Decoder::IterationTree(const std::vector<std::string> &x_vector, Node *pnode, int i, int j) {
     pnode->SetStartIndex(i);
@@ -316,6 +333,15 @@ void Decoder::IterationTree(const std::vector<std::string> &x_vector, Node *pnod
     }
 }
 
+/**
+ *
+ * annotate the non-terminator with the position pair i, j of a sentence p_x_vector.
+ *
+ * @param ptr_root
+ * @param isTraining
+ * @param p_x_vector
+ * @return
+ */
 std::pair<std::string, int> Decoder::IterationGroundTruthTree(Node *ptr_root, bool isTraining,
                                                               std::vector<std::string> *p_x_vector) {
     if (NULL == ptr_root) {
@@ -343,19 +369,25 @@ std::pair<std::string, int> Decoder::IterationGroundTruthTree(Node *ptr_root, bo
         end_index_++;
     }
     ptr_root->SetEndIndex(pair_right.second);
-    //insert into a map for calculation the precission and recall.
+    //insert into a map for calculation the precision and recall.
     if(ptr_non_terminator_map_->find(root_str)!=ptr_non_terminator_map_->end()){
         CKY_Tuple tuple= std::make_pair(std::make_pair(pair_left.second,pair_right.second),root_str);
         ptr_groundtruth_map_->insert(std::make_pair(tuple,map_index_));
     }
     return pair_left;
 }
-
+/**
+ * Parse PTB data and annotate the position pair for each non-terminator.
+ *
+ * @param str
+ */
 void Decoder::ParsePTB(std::string str) {
         BinaryTree *ptree = new BinaryTree(str);
         map_index_ = 0;
+        //annotate the position pair for each non-terminator.
         std::pair<std::string, int> pair = IterationGroundTruthTree(ptree->GetRootNode(), true, ptree->GetXVector());
         ptree->GetRootNode()->SetEndIndex(ptree->GetXVector()->size() -1);
+        //insert the start symbol ROOT to the groundtruth map.
         if(ptr_non_terminator_map_->find(ptree->GetRootNode()->GetData())!=ptr_non_terminator_map_->end()){
             CKY_Tuple tuple= std::make_pair(std::make_pair(0,ptree->GetXVector()->size()-1),ptree->GetRootNode()->GetData());
             ptr_groundtruth_map_->insert(std::make_pair(tuple,map_index_));
@@ -364,6 +396,9 @@ void Decoder::ParsePTB(std::string str) {
         delete ptree;
 }
 
+/**
+ *  Calculate the precision and recall denominator.
+ */
 void Decoder::Compare() {
     for(auto it = ptr_parsing_map_->begin(); it != ptr_parsing_map_->end(); ++it){
 #ifdef IF_DEBUG_
@@ -373,8 +408,11 @@ void Decoder::Compare() {
             result_numerator_ ++;
         }
     }
-    result_denominator_ += ptr_parsing_map_->size();
-    std::cout << line_index_<<" th line"<<"the numerrator and denominationator are:"<<result_numerator_ <<","<<result_denominator_<<std::endl;
+    result_denominator_precision_ += ptr_parsing_map_->size();
+    result_denominator_recall_ += ptr_groundtruth_map_->size();
+    std::cout << line_index_ << " th line: " << "the numerrator, precsion and recall denominationator are:"
+              << result_numerator_ << ", " << result_denominator_precision_ << " , " << result_denominator_recall_
+              << std::endl;
 }
 
 void Decoder::Decoding(const char *test_file_name) {
@@ -402,6 +440,7 @@ void Decoder::Decoding(const char *test_file_name) {
         Clear();
         line_index_ ++;
     }
-    double precission = (double)result_numerator_ / (double)result_denominator_;
-    std::cout << "precission is" << precission<< std::endl;
+    double precision = (double)result_numerator_ / (double)result_denominator_precision_;
+    double recall = (double)result_numerator_ / (double)result_denominator_recall_;
+    std::cout << "precision and recall are" << precision<<" , "<<recall<<std::endl;
 }

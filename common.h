@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 
+
 const char LEFT_BRACKET_CHAR = '(';
 const char RIGHT_BRACKET_CHAR = ')';
 const std::string SPACE_STRING = " ";
@@ -23,7 +24,9 @@ const std::string NO_RIGHT_CHILD_FLAG = "%%%";
 const std::string TRAINING_DATA_SET_FILE = "ptb-binary.train";
 const std::string TESTING_DATA_SET_FILE = "ptr-binary.test";
 const std::string SENTENCE_FILE = "sentence.txt";
+const std::string SENTENCE_TRAINING_FILE = "training_sentence.txt";
 const std::string PHRASE_LEVEL_FILE = "phraselevel.txt";
+const std::string NON_TERMINATOR_FILE = "non-terminator.txt";
 const std::string STOP_STRING = ".";
 const double NEGATIVE_VALUE = -100000;
 const std::string ROOT_NODE = "ROOT";
@@ -42,5 +45,12 @@ typedef std::unordered_map<CKY_Tuple, double, boost::hash<CKY_Tuple>> CKY_Score_
 typedef std::pair<std::pair<std::string, std::string>,int> Child_Split;
 //typedef std::unordered_map<MAX_CKY_Pair, int, boost::hash<MAX_CKY_Pair>> MAX_CKY_Sore_Map;
 typedef std::unordered_map<CKY_Tuple, Child_Split, boost::hash<CKY_Tuple>> MAX_CKY_Sore_Map;
+typedef std::unordered_map<std::string, double> Element_Expected_Map;
+
+
+typedef std::pair<std::string,std::pair<int,int>> IO_Tuple;
+typedef std::unordered_map<IO_Tuple, double, boost::hash<CKY_Tuple>> IO_Map;
+
+
 
 #endif //PCFG_COMMON_H

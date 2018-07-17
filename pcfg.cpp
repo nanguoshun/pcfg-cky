@@ -41,27 +41,24 @@ void PCFG::GenerateNonTerminatorMap() {
     }
 }
 
-void PCFG::SupervisedTraining(const char *file_name) {
-    BuildTreeFromPTB(file_name);
-    CountAll();
-    CalcWeight();
-    SaveModel(MODEL_FILE);
-    GenerateNonTerminatorMap();
-    for(auto it = tree_vector_.begin(); it!=tree_vector_.end();++it){
-        (*it)->PrintTree((*it)->GetRootNode());
-    }
-}
-
 void PCFG::CountAll() {
     for (std::vector<BinaryTree *>::iterator it = tree_vector_.begin(); it != tree_vector_.end(); ++it) {
-        start_index_ = 0;
-        end_index_ = 0;
+ //       start_index_ = 0;
+ //       end_index_ = 0;
  //       std::pair<std::string, int> pair = IterationTree((*it)->GetRootNode(), true, (*it)->GetXVector());
    //     (*it)->GetRootNode()->SetEndIndex((*it)->GetXVector()->size() -1);
         IterationTree((*it)->GetRootNode(),true,(*it)->GetXVector());
         std::cout << std::endl;
     }
 }
+
+/**
+ * Iterate the tree and count the non-terminator and the rule
+ * @param ptr_root
+ * @param isTraining
+ * @param p_x_vector
+ * @return
+ */
 
 std::string PCFG::IterationTree(Node *ptr_root, bool isTraining, std::vector<std::string> *p_x_vector) {
     if (NULL == ptr_root) {
@@ -127,6 +124,12 @@ std::pair<std::string, int> PCFG::IterationTree(Node *ptr_root, bool isTraining,
 }
 */
 
+/**
+ * count value for each non-terminator.
+ *
+ * @param str
+ */
+
 void PCFG::CountValue(std::string str) {
     if (ptr_element_cout_map_->find(str) == ptr_element_cout_map_->end()) {
         //if the element is not existed, then insert it and set count as 1;
@@ -165,6 +168,10 @@ void PCFG::CalcWeight() {
     }
 }
 
+/**
+ * write the model to a file to facilitate testing in an offline mananer.
+ * @param model_file
+ */
 void PCFG::SaveModel(std::string model_file) {
     std::ofstream ofs(model_file);
     for(Rule_Weight_Map::iterator it = ptr_rule_weight_map_->begin(); it!=ptr_rule_weight_map_->end();++it){
@@ -177,4 +184,19 @@ void PCFG::SaveModel(std::string model_file) {
         ofs << (*it).second;
         ofs << "\n";
     }
+}
+
+void PCFG::SupervisedTraining(const char *file_name) {
+    BuildTreeFromPTB(file_name);
+    CountAll();
+    CalcWeight();
+    SaveModel(MODEL_FILE);
+    GenerateNonTerminatorMap();
+    for(auto it = tree_vector_.begin(); it!=tree_vector_.end();++it){
+        (*it)->PrintTree((*it)->GetRootNode());
+    }
+}
+
+void PCFG::UnsupervisedTraining(const char *file_name) {
+
 }

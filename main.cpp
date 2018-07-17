@@ -1,13 +1,20 @@
 #include "common.h"
 #include "pcfg.h"
 #include "decoding.h"
+#include "pcfg-em.h"
 int main() {
 bool full_data = true;
+bool supervised = false;
 if(full_data){
-    PCFG *ptr_pcfg = new PCFG();
-    ptr_pcfg->SupervisedTraining("ptb-binary.train");
-    Decoder *ptr_decoder = new Decoder();
-    ptr_decoder->Decoding("ptb-binary.test");
+    if(supervised){
+        PCFG *ptr_pcfg = new PCFG();
+        ptr_pcfg->SupervisedTraining("ptb-binary.train");
+        Decoder *ptr_decoder = new Decoder();
+        ptr_decoder->Decoding("ptb-binary.test");
+    } else{
+        PCFGEM *ptr_pcfg = new PCFGEM();
+        ptr_pcfg->Training("ptb-binary.train");
+    }
 } else {
     PCFG *ptr_pcfg = new PCFG();
     ptr_pcfg->SupervisedTraining("ptb-train-test.txt");
