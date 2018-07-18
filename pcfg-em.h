@@ -29,7 +29,8 @@ public:
     void CalcAlpha(std::vector<std::string> &x_vector);
     double GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j);
     void CalcBeta(std::vector<std::string> &x_vector);
-    double CalcBeta(int i, int j, std::string rule_str);
+    double CalcBeta(std::vector<std::string> &x_vector, int i, int j, std::string rule_str);
+    double GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Rule &binary_rule, int i, int j, bool k_left);
     void InitExpectCount();
     double GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple);
     void Reset();

@@ -157,6 +157,14 @@ void PCFGEM::InitExpectCount() {
 
 }
 
+/**
+ *  EM algorithm
+ *
+ *  E step: calc the expected count using the parameters.
+ *
+ *  M step: update the rule weight using the expected count in E step.
+ */
+
 void PCFGEM::EM() {
     for (auto it= ptr_str_matrix_->begin(); it!=ptr_str_matrix_->end() ; ++it) {
         std::vector<std::string> x_vector = (*it);
@@ -165,6 +173,10 @@ void PCFGEM::EM() {
     }
 }
 
+/**
+ * EM for a sentence x_vector.
+ * @param x_vector
+ */
 void PCFGEM::EMSentence(std::vector<std::string> &x_vector) {
     //calculate the rule map. no need to reset tmp_map for each sentence.
     for(auto it = ptr_rule_expected_count_temp_->begin(); it!=ptr_rule_expected_count_temp_->end(); ++it){
@@ -174,6 +186,14 @@ void PCFGEM::EMSentence(std::vector<std::string> &x_vector) {
         (*it).second = rule_value;
     }
 }
+
+/**
+ * calc the expected count for a rule.
+ *
+ * @param x_vector
+ * @param rule
+ * @return
+ */
 
 double PCFGEM::CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule) {
     double Z = CalcZ(x_vector);
@@ -190,6 +210,10 @@ double PCFGEM::CalcZ(std::vector<std::string> &x_vector) {
 
 }
 
+/**
+ * Calc all alpha for a sentence x_vector.
+ * @param x_vector
+ */
 
 void PCFGEM::CalcAlpha(std::vector<std::string> &x_vector) {
     for(auto it = ptr_phrase_level_rule_map_->begin(); it != ptr_phrase_level_rule_map_->end(); ++it) {
@@ -205,6 +229,13 @@ void PCFGEM::CalcAlpha(std::vector<std::string> &x_vector) {
     }
 }
 
+/**
+ * Get the alpha(r, i, j)
+ * @param i
+ * @param j
+ * @param rule_str
+ * @return
+ */
 
 double PCFGEM::CalcAlpha(int i, int j, std::string rule_str) {
     double value = 0;
@@ -217,6 +248,15 @@ double PCFGEM::CalcAlpha(int i, int j, std::string rule_str) {
     }
     return value;
 }
+
+/**
+ * Calc the sum of the product of \sum ( weigh(A->BC) * alpha(B, i, k) * alpha(C, k+1, j) )
+ * @param weight: functinal weight.
+ * @param binary_rule: for a rule A->BC
+ * @param i: start position from 0 to size-1;
+ * @param j: stop  position form i to size-1;
+ * @return: the sum of product
+ */
 
 double PCFGEM::GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j) {
     double value = 0;
@@ -232,6 +272,12 @@ double PCFGEM::GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j) {
     return value;
 }
 
+/**
+ * Get related alpha or beta value from the map.
+ * @param ptr_map
+ * @param tuple : alpha or beata tuple, eg. (A, (0,1))
+ * @return
+ */
 
 double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
     double value = 0;
@@ -241,6 +287,10 @@ double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
     return  value;
 }
 
+/**
+ * Calculate the beta for a sentence x_vector.
+ * @param x_vector
+ */
 void PCFGEM::CalcBeta(std::vector<std::string> &x_vector) {
     for(auto it = ptr_phrase_level_rule_map_->begin(); it != ptr_phrase_level_rule_map_->end(); ++it){
         std::string rule_str = (*it).first;
@@ -248,15 +298,67 @@ void PCFGEM::CalcBeta(std::vector<std::string> &x_vector) {
     }
 }
 
-double PCFGEM::CalcBeta(int i, int j, std::string rule_str) {
+/**
+ * Calc beta(rule_str, i, j)
+ *
+ * Assume the rule rule_str indicates A, and rules are B->CA and B->AC respectively.
+ *
+ * @param i
+ * @param j
+ * @param rule_str
+ * @return
+ */
+double PCFGEM::CalcBeta(std::vector<std::string> &x_vector,int i, int j, std::string rule_str) {
+    double value = 0;
     for(auto it = ptr_binary_rule_weight_map_->begin(); it != ptr_binary_rule_weight_map_->end(); ++it){
         PCFG_Rule binary_rule = (*it).first;
-        if(rule_str == binary_rule.first){
-
+        // for B->CA
+        if(rule_str == binary_rule.second.second){
+            double weight = (*it).second;
+            value += GetBeta(x_vector,weight,binary_rule,i,j,true);
+        }
+        // for B->AC
+        if(rule_str == binary_rule.second.first){
+            double weight = (*it).second;
+            value += GetBeta(x_vector,weight,binary_rule,i,j,false);
         }
     }
 }
 
+/**
+ *
+ * @param weight
+ * @param binary_rule
+ * @param i
+ * @param j
+ * @param k_right: k is bigger than i or not.
+ * @return
+ */
+double PCFGEM::GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Rule &binary_rule, int i, int j, bool k_left) {
+    double value = 0;
+    if(k_left){
+        for(int k=1; k<i; ++k){
+            IO_Tuple tuple_alpha = std::make_pair(binary_rule.second.first,std::make_pair(k, i-1));
+            IO_Tuple tuple_beta = std::make_pair(binary_rule.first,std::make_pair(k,j));
+            double alpha_k_i = GetIOValue(ptr_alpha_map_,tuple_alpha);
+            double beta_k_J = GetIOValue(ptr_beta_map_,tuple_beta);
+            value += weight * alpha_k_i * beta_k_J;
+        }
+    } else{
+       for(int k=j+1; k<x_vector.size(); ++k){
+
+       }
+    }
+}
+
+/**
+ * Calc the expeccted count of Count(A->BC)
+  *
+  * @param x_vector
+  * @param rule
+  * @param Z
+  * @return
+  */
 double PCFGEM::CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z) {
     for(int l=1; l < x_vector.size(); ++l){
         for(int i=0; i < x_vector.size()-l; ++i){
@@ -265,6 +367,14 @@ double PCFGEM::CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG
         }
     }
 }
+
+/**
+ *
+ * @param x_vector
+ * @param rule
+ * @param Z
+ * @return
+ */
 
 double PCFGEM::CalcWordLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z) {
 
