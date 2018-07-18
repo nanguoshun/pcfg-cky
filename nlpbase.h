@@ -15,9 +15,12 @@ public:
     ~NLPBase();
     std::string IterationExtract(Node *ptr_root, int row_index);
     void ExtractSentenceFile(const char *file_name);
+    void GeneratePhraseLevelRuleMap(const std::string file_name);
 protected:
     std::vector<std::vector<std::string>> *ptr_str_matrix_;
     int instance_num_;
+    std::unordered_map<std::string, int> *ptr_phrase_level_rule_map_;
+
 private:
 
 

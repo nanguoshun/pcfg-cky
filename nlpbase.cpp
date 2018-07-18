@@ -47,5 +47,14 @@ void NLPBase::ExtractSentenceFile(const char *file_name) {
     instance_num_ = row;
 }
 
+void NLPBase::GeneratePhraseLevelRuleMap(const std::string file_name) {
+    std::ifstream ifs(file_name);
+    std::string str;
+    int index = 0;
+    while (std::getline(ifs,str)){
+        ptr_phrase_level_rule_map_->insert(std::make_pair(str,index));
+        index++;
+    }
+}
 
 

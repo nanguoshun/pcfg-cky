@@ -11,7 +11,11 @@ PCFGEM::PCFGEM() {
     ptr_alpha_map_ = new IO_Map;
     ptr_beta_map_ = new IO_Map;
     ptr_rule_weight_map_ = new Rule_Weight_Map;
+    ptr_binary_rule_weight_map_ = new Rule_Weight_Map;
+    ptr_rule_expected_count_temp_ new Rule_Weight_Map;
+    ptr_rule_expected_count_ = new Rule_Weight_Map;
 }
+
 
 PCFGEM::~PCFGEM() {
    delete ptr_terminal_map_;
@@ -28,6 +32,7 @@ PCFGEM::~PCFGEM() {
    delete ptr_rule_weight_map_;
 }
 
+
 /**
  * read the model.txt, non-terminator.txt and sentence.txt to init CFG.
  *
@@ -40,18 +45,7 @@ void PCFGEM::InitCFG(const std::string &rule_file, const std::string &non_termin
     std::ifstream if_rule(rule_file), if_non(non_terminator), if_t(terminator);
     std::string str;
     int index = 0;
-    while (std::getline(if_rule,str)){
-        std::stringstream ss(str);
-        std::string tag1,tag2,tag3;
-        ss >> tag1;
-        ss >> tag2;
-        ss >> tag3;
-        PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2,tag3));
-        ptr_rule_map_->insert(std::make_pair(rule,index));
-        //init weight map as 0;
-        ptr_rule_weight_map_->insert(std::make_pair(rule,0));
-        index ++;
-    }
+    InitRuleMap(if_rule,str);
     index = 0;
     while (std::getline(if_non,str)){
        std::stringstream ss(str);
@@ -70,6 +64,37 @@ void PCFGEM::InitCFG(const std::string &rule_file, const std::string &non_termin
         }
     }
 }
+
+/**
+ * init rule map.
+ *
+ * @param ifs
+ * @param str
+ */
+void PCFGEM::InitRuleMap(std::ifstream &ifs, std::string &str) {
+    int index = 0;
+    while (std::getline(ifs,str)){
+        std::stringstream ss(str);
+        std::string tag1,tag2,tag3;
+        ss >> tag1;
+        ss >> tag2;
+        ss >> tag3;
+        PCFG_Rule rule = std::make_pair(tag1, std::make_pair(tag2,tag3));
+        ptr_rule_map_->insert(std::make_pair(rule,index));
+        //create and then init weight map as 0;
+        ptr_rule_weight_map_->insert(std::make_pair(rule,0));
+        //create and then init weight map as 0;
+        ptr_rule_expected_count_->insert(std::make_pair(rule,0));
+        ptr_rule_expected_count_temp_->insert(std::make_pair(rule,0));
+        //
+        index ++;
+    }
+}
+
+void PCFGEM::InitPhraseLevelMap(const std::string &str) {
+    GeneratePhraseLevelRuleMap(str);
+}
+
 /**
  * Init alpha and beta for each Inside and Outside calculation.
  *
@@ -97,7 +122,7 @@ void PCFGEM::InitAlphaBeta(std::vector<std::string> &x_vector) {
         if(rule_str == ROOT_NODE){
             beta_value = 1;
         }
-        ptr_beta_map_->insert(std::make_pair(beta_rule,beta_rule));
+        ptr_beta_map_->insert(std::make_pair(beta_rule,beta_value));
     }
 }
 
@@ -133,19 +158,126 @@ void PCFGEM::InitExpectCount() {
 }
 
 void PCFGEM::EM() {
-
     for (auto it= ptr_str_matrix_->begin(); it!=ptr_str_matrix_->end() ; ++it) {
         std::vector<std::string> x_vector = (*it);
         EMSentence(x_vector);
+        Reset();
     }
 }
 
 void PCFGEM::EMSentence(std::vector<std::string> &x_vector) {
+    //calculate the rule map. no need to reset tmp_map for each sentence.
+    for(auto it = ptr_rule_expected_count_temp_->begin(); it!=ptr_rule_expected_count_temp_->end(); ++it){
+        PCFG_Rule rule = (*it).first;
+        double rule_value = 0;
+        rule_value = CalcRuleCount(x_vector, rule);
+        (*it).second = rule_value;
+    }
+}
 
+double PCFGEM::CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule) {
+    double Z = CalcZ(x_vector);
+    // calc the count (A-X) for sentence x_vector
+    if(rule.second.second == NO_RIGHT_CHILD_FLAG){
+        return CalcWordLevelRuleCount(x_vector, rule, Z);
+    } else{
+        //calc the count(A->BC) for sentence x_vector
+        return CalcPhraseLevelRuleCount(x_vector, rule, Z);
+    }
+}
+
+double PCFGEM::CalcZ(std::vector<std::string> &x_vector) {
+
+}
+
+
+void PCFGEM::CalcAlpha(std::vector<std::string> &x_vector) {
+    for(auto it = ptr_phrase_level_rule_map_->begin(); it != ptr_phrase_level_rule_map_->end(); ++it) {
+        std::string rule_str = (*it).first;
+        for(int l=1; l<x_vector.size(); ++l){
+            for(int i=0; i<x_vector.size()-l; ++i){
+                int j = i + l;
+                double value = CalcAlpha(i,j,rule_str);
+                IO_Tuple alpha_tuple = std::make_pair(rule_str,std::make_pair(i,j));
+                ptr_alpha_map_->insert(std::make_pair(alpha_tuple,value));
+            }
+        }
+    }
+}
+
+
+double PCFGEM::CalcAlpha(int i, int j, std::string rule_str) {
+    double value = 0;
+    for (auto itt = ptr_binary_rule_weight_map_->begin(); itt != ptr_binary_rule_weight_map_->end(); ++itt) {
+        PCFG_Rule binary_rule = (*itt).first;
+        if (rule_str == binary_rule.first) {
+            double weight = (*itt).second;
+            value += GetAlpha(weight,binary_rule,i,j);
+        }
+    }
+    return value;
+}
+
+double PCFGEM::GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j) {
+    double value = 0;
+    for (int k = i; k < j; ++k) {
+        std::string str_b = binary_rule.second.first;
+        std::string str_c = binary_rule.second.second;
+        IO_Tuple tuple_b = std::make_pair(str_b,std::make_pair(i, k));
+        IO_Tuple tuple_c = std::make_pair(str_c,std::make_pair(k+1, j));
+        double alpha_b_i_k = GetIOValue(ptr_alpha_map_,tuple_b);
+        double alpha_b_k_j = GetIOValue(ptr_alpha_map_,tuple_c);
+        value += weight * alpha_b_i_k * alpha_b_k_j;
+    }
+    return value;
+}
+
+
+double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
+    double value = 0;
+    if(ptr_map->find(tuple) != ptr_map->end()){
+        value = ptr_map->find(tuple)->second;
+    }
+    return  value;
+}
+
+void PCFGEM::CalcBeta(std::vector<std::string> &x_vector) {
+    for(auto it = ptr_phrase_level_rule_map_->begin(); it != ptr_phrase_level_rule_map_->end(); ++it){
+        std::string rule_str = (*it).first;
+
+    }
+}
+
+double PCFGEM::CalcBeta(int i, int j, std::string rule_str) {
+    for(auto it = ptr_binary_rule_weight_map_->begin(); it != ptr_binary_rule_weight_map_->end(); ++it){
+        PCFG_Rule binary_rule = (*it).first;
+        if(rule_str == binary_rule.first){
+
+        }
+    }
+}
+
+double PCFGEM::CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z) {
+    for(int l=1; l < x_vector.size(); ++l){
+        for(int i=0; i < x_vector.size()-l; ++i){
+            int j = i + l;
+
+        }
+    }
+}
+
+double PCFGEM::CalcWordLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z) {
+
+}
+
+void PCFGEM::Reset() {
+    ptr_alpha_map_->clear();
+    ptr_beta_map_->clear();
 }
 
 void PCFGEM::Training(const char *file_name) {
     InitCFG(MODEL_FILE,NON_TERMINATOR_FILE,SENTENCE_FILE);
+    InitPhraseLevelMap(PHRASE_LEVEL_FILE);
     ExtractSentenceFile(file_name);
     EM();
 }

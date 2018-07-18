@@ -19,7 +19,7 @@ public:
     void Decoding(const char *file_name);
     void ReadModel(std::string model_file);
     void GenerateNonTerminatorMapFromWeighMap();
-    void GeneratePhraseLevelRuleVector(const std::string file_name);
+    void GeneratePhraseLevelRuleMap(const std::string file_name);
     void InitCKY(std::vector<std::string> *ptr_x_vector);
     void CKY(std::vector<std::string> *ptr_x_vector);
     void GetRuleWeight(std::string &x_str, Rule_Weight_Vector &rule_vector);

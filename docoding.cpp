@@ -35,7 +35,7 @@ Decoder::~Decoder() {
     }
 }
 
-void Decoder::GeneratePhraseLevelRuleVector(const std::string file_name) {
+void Decoder::GeneratePhraseLevelRuleMap(const std::string file_name) {
     std::ifstream ifs(file_name);
     std::string str;
     int index = 0;
@@ -416,7 +416,7 @@ void Decoder::Compare() {
 }
 
 void Decoder::Decoding(const char *test_file_name) {
-    GeneratePhraseLevelRuleVector(PHRASE_LEVEL_FILE);
+    GeneratePhraseLevelRuleMap(PHRASE_LEVEL_FILE);
     ReadModel(MODEL_FILE);
     ExtractSentenceFile(test_file_name);
     GenerateNonTerminatorMapFromWeighMap();
