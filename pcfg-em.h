@@ -21,6 +21,10 @@ public:
     void InitAlphaBeta(std::vector<std::string> &x_vector);
     void RandomizeRuleWeight();
     void EM();
+    void EStep();
+    void MStep();
+    bool isConvergence();
+    void SaveModel(std::string model_file);
     void SumExpectedCount();
     void CalcExpectedCount(std::vector<std::string> &x_vector);
     double CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule);

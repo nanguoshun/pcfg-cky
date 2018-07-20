@@ -610,16 +610,8 @@ void PCFGEM::SumExpectedCount() {
     }
 }
 
-/**
- *  EM algorithm
- *
- *  E step: calc the expected count using the parameters.
- *
- *  M step: update the rule weight using the expected count in E step.
- */
 
-void PCFGEM::EM() {
-    //E-Step;
+void PCFGEM::EStep() {
     for (auto it = ptr_str_matrix_->begin(); it != ptr_str_matrix_->end(); ++it) {
         std::vector<std::string> x_vector = (*it);
         InitAlphaBeta(x_vector);
@@ -627,7 +619,9 @@ void PCFGEM::EM() {
         SumExpectedCount();
         Reset();
     }
-    //M-Step;
+}
+
+void PCFGEM::MStep() {
     for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
         PCFG_Rule rule = (*it).first;
         std::string rule_str = rule.first;
@@ -648,10 +642,48 @@ void PCFGEM::EM() {
         }
         double weight = 0;
         if(denominator !=0){
-          weight = numerator / denominator;
+            weight = numerator / denominator;
         }
         //update the weight of the rule.
         (*it).second = weight;
+    }
+}
+
+/**
+ *  EM algorithm
+ *
+ *  E step: calc the expected count using the parameters.
+ *  M step: update the rule weight using the expected count in E step.
+ */
+void PCFGEM::EM() {
+    while(true == isConvergence()){
+        //E-Step;
+        EStep();
+        //M-Step;
+        MStep();
+    }
+}
+
+bool PCFGEM::isConvergence() {
+    //objective function.
+    
+}
+
+/**
+ * write the model to a file to facilitate testing in an offline mananer.
+ * @param model_file
+ */
+void PCFGEM::SaveModel(std::string model_file) {
+    std::ofstream ofs(model_file);
+    for(Rule_Weight_Map::iterator it = ptr_rule_weight_map_->begin(); it!=ptr_rule_weight_map_->end();++it){
+        ofs << (*it).first.first;
+        ofs << " ";
+        ofs << (*it).first.second.first;
+        ofs << " ";
+        ofs << (*it).first.second.second;
+        ofs << " ";
+        ofs << (*it).second;
+        ofs << "\n";
     }
 }
 
@@ -660,6 +692,7 @@ void PCFGEM::Training(const char *file_name) {
     InitPhraseLevelMap(PHRASE_LEVEL_FILE);
     ExtractSentenceFile(file_name);
     EM();
+    SaveModel(UNSUPERVISED_MODEL_FILE);
 }
 
 
