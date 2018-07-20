@@ -28,9 +28,13 @@ public:
     double CalcAlpha(int i, int j, std::string rule_str);
     void CalcAlpha(std::vector<std::string> &x_vector);
     double GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j);
-    void CalcBeta(std::vector<std::string> &x_vector);
-    double CalcBeta(std::vector<std::string> &x_vector, int i, int j, std::string rule_str);
-    double GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Rule &binary_rule, int i, int j, bool k_left);
+    double CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j);
+    Rule_Weight_Vector GetRulesAsRightChild(std::string &rule_str);
+    Rule_Weight_Vector GetRulesAsLeftChild(std::string &rule_str);
+    double GetValue(const IO_Map *ptr_map, const std::string &rule_str, const int i, const int j);
+    //void CalcBeta(std::vector<std::string> &x_vector);
+    //double CalcBeta(std::vector<std::string> &x_vector, int i, int j, std::string rule_str);
+    //double GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Rule &binary_rule, int i, int j, bool k_left);
     void InitExpectCount();
     double GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple);
     void Reset();
@@ -47,6 +51,7 @@ private:
     Rule_Weight_Map *ptr_rule_expected_count_;
     Rule_Weight_Map *ptr_rule_expected_count_temp_;
     Element_Expected_Map *ptr_element_expected_count_;
+    int sentence_len_;
 };
 
 

@@ -52,5 +52,4 @@ typedef std::pair<std::string,std::pair<int,int>> IO_Tuple;
 typedef std::unordered_map<IO_Tuple, double, boost::hash<CKY_Tuple>> IO_Map;
 
 
-
 #endif //PCFG_COMMON_H
