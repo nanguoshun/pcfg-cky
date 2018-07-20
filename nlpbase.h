@@ -19,7 +19,7 @@ public:
 protected:
     std::vector<std::vector<std::string>> *ptr_str_matrix_;
     int instance_num_;
-    std::unordered_map<std::string, int> *ptr_phrase_level_rule_map_;
+    std::unordered_set<std::string> *ptr_phrase_level_rule_set_;
 
 private:
 

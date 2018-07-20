@@ -13,6 +13,8 @@
 #include <fstream>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
+#include <tuple>
 #include <boost/functional/hash.hpp>
 
 
@@ -32,7 +34,6 @@ const double NEGATIVE_VALUE = -100000;
 const std::string ROOT_NODE = "ROOT";
 const std::string TERMINATOR_FLAG = "TERNMINATOR";
 #define IF_DEBUG_ = 1;
-
 typedef std::pair<std::string, std::pair<std::string, std::string>> PCFG_Rule;
 typedef std::vector<std::pair<PCFG_Rule, double>> Rule_Weight_Vector;
 typedef std::unordered_map<PCFG_Rule, int, boost::hash<PCFG_Rule>> Rule_Map;
@@ -46,10 +47,10 @@ typedef std::pair<std::pair<std::string, std::string>,int> Child_Split;
 //typedef std::unordered_map<MAX_CKY_Pair, int, boost::hash<MAX_CKY_Pair>> MAX_CKY_Sore_Map;
 typedef std::unordered_map<CKY_Tuple, Child_Split, boost::hash<CKY_Tuple>> MAX_CKY_Sore_Map;
 typedef std::unordered_map<std::string, double> Element_Expected_Map;
-
-
 typedef std::pair<std::string,std::pair<int,int>> IO_Tuple;
-typedef std::unordered_map<IO_Tuple, double, boost::hash<CKY_Tuple>> IO_Map;
-
+typedef std::unordered_map<IO_Tuple, double, boost::hash<IO_Tuple>> IO_Map;
+typedef std::tuple<int, int, int> Pos_Tuple; // i, k, j;
+typedef std::unordered_map<PCFG_Rule, Pos_Tuple, boost::hash<PCFG_Rule>> Binary_Rule_U_Map;
+typedef std::unordered_map<std::string, std::vector<PCFG_Rule> *>Symbol_Rule_Vector_Map;
 
 #endif //PCFG_COMMON_H
