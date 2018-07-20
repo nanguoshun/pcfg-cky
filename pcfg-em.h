@@ -21,7 +21,8 @@ public:
     void InitAlphaBeta(std::vector<std::string> &x_vector);
     void RandomizeRuleWeight();
     void EM();
-    void EMSentence(std::vector<std::string> &x_vector);
+    void SumExpectedCount();
+    void CalcExpectedCount(std::vector<std::string> &x_vector);
     double CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule);
     double CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z);
     double CalcWordLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z);
@@ -44,6 +45,7 @@ public:
     void CalcSymbol_Ui();
     double CalcBinaryRule_U(PCFG_Rule &rule, int i, int k, int j);
     double GetRuleWeight(PCFG_Rule &rule);
+    double CalcDenominator(std::vector<PCFG_Rule> *ptr_rule_vector);
 private:
     std::unordered_set<std::string> *ptr_non_terminal_set_;
     std::unordered_set<std::string> *ptr_terminal_set_;

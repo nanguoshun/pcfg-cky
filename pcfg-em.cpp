@@ -76,6 +76,7 @@ void PCFGEM::InitCFG(const std::string &rule_file, const std::string &non_termin
         }
     }
     InitSymbolRuleVectorMap();
+    RandomizeRuleWeight();
 }
 
 /**
@@ -190,7 +191,18 @@ void PCFGEM::InitIO() {
  * randomize the rule weight for the inside/outside algorithm.
  */
 void PCFGEM::RandomizeRuleWeight() {
-
+    for(auto it = ptr_symbol_rule_vector_map_->begin(); it!= ptr_symbol_rule_vector_map_->end(); ++it){
+       std::vector<PCFG_Rule> *ptr_vector = (*it).second;
+       double weight = ((double)1) / ((double)ptr_vector->size());
+       for(auto itt = ptr_vector->begin(); itt != ptr_vector->end(); ++itt){
+           auto it_weight = ptr_rule_weight_map_->find((*itt));
+           if(it_weight != ptr_rule_weight_map_->end()){
+               (*it_weight).second = weight;
+           } else{
+               std::cout << "Randomized Error: no rules found in the rule weight map"<<std::endl;
+           }
+       }
+   }
 }
 
 void PCFGEM::InitExpectCount() {
@@ -559,13 +571,42 @@ double PCFGEM::CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule
  * EM for a sentence x_vector.
  * @param x_vector
  */
-void PCFGEM::EMSentence(std::vector<std::string> &x_vector) {
+void PCFGEM::CalcExpectedCount(std::vector<std::string> &x_vector) {
     //calculate the rule map. no need to reset tmp_map for each sentence.
     for(auto it = ptr_rule_expected_count_temp_->begin(); it!=ptr_rule_expected_count_temp_->end(); ++it){
         PCFG_Rule rule = (*it).first;
         double rule_count = 0;
         rule_count = CalcRuleCount(x_vector, rule);
         (*it).second = rule_count;
+    }
+}
+
+/**
+ * Calc the summation of rule in the M step.
+ *
+ * @param ptr_rule_vector
+ * @return
+ */
+
+double PCFGEM::CalcDenominator(std::vector<PCFG_Rule> *ptr_rule_vector) {
+    double value = 0;
+    for(auto it = ptr_rule_vector->begin(); it!=ptr_rule_vector->end(); ++it){
+        auto it_expected = ptr_rule_expected_count_->find((*it));
+        if(it_expected != ptr_rule_expected_count_->end()){
+            value += (*it_expected).second;
+        }else{
+            std::cout <<"denominator error: no rule in the expected count map"<<std::endl;
+        }
+    }
+    return value;
+}
+
+void PCFGEM::SumExpectedCount() {
+    //summing expected count of all sentences;
+    auto itt = ptr_rule_expected_count_->begin();
+    for(auto it_temp = ptr_rule_expected_count_temp_->begin(); it_temp != ptr_rule_expected_count_temp_->end(); ++it_temp) {
+        (*itt).second += (*it_temp).second;
+        ++itt;
     }
 }
 
@@ -579,20 +620,38 @@ void PCFGEM::EMSentence(std::vector<std::string> &x_vector) {
 
 void PCFGEM::EM() {
     //E-Step;
-    for (auto it= ptr_str_matrix_->begin(); it!=ptr_str_matrix_->end() ; ++it) {
+    for (auto it = ptr_str_matrix_->begin(); it != ptr_str_matrix_->end(); ++it) {
         std::vector<std::string> x_vector = (*it);
-        EMSentence(x_vector);
-        //summing expected count;
-        auto itt = ptr_rule_expected_count_->begin();
-        for(auto it_temp = ptr_rule_expected_count_temp_->begin();it_temp!=ptr_rule_expected_count_temp_->end(); ++it_temp){
-            (*itt).second += (*it_temp).second;
-            ++itt;
-        }
+        InitAlphaBeta(x_vector);
+        CalcExpectedCount(x_vector);
+        SumExpectedCount();
         Reset();
     }
     //M-Step;
-    for(auto it = ptr_rule_expected_count_->begin(); it != ptr_rule_expected_count_->end(); ++it){
-
+    for (auto it = ptr_rule_weight_map_->begin(); it != ptr_rule_weight_map_->end(); ++it) {
+        PCFG_Rule rule = (*it).first;
+        std::string rule_str = rule.first;
+        double numerator = 0;
+        auto it_n = ptr_rule_expected_count_->find(rule);
+        if(it_n!= ptr_rule_expected_count_->end()) {
+            numerator = (*it_n).second;
+        } else {
+            std::cout << "error: no rule in the expected count map" << std::endl;
+        }
+        double denominator = 0;
+        auto it_d = ptr_symbol_rule_vector_map_->find(rule_str);
+        if(it_d != ptr_symbol_rule_vector_map_->end()){
+            std::vector<PCFG_Rule> *ptr_vector = (*it_d).second;
+            denominator = CalcDenominator(ptr_vector);
+        }else{
+            std::cout <<"error: no rule in the rule vector map"<<std::endl;
+        }
+        double weight = 0;
+        if(denominator !=0){
+          weight = numerator / denominator;
+        }
+        //update the weight of the rule.
+        (*it).second = weight;
     }
 }
 
