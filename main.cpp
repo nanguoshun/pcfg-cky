@@ -3,7 +3,7 @@
 #include "decoding.h"
 #include "pcfg-em.h"
 int main() {
-bool full_data = true;
+bool full_data = false;
 bool supervised = false;
 if(full_data){
     if(supervised){

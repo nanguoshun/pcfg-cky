@@ -168,26 +168,6 @@ void PCFGEM::InitAlphaBeta(std::vector<std::string> &x_vector) {
 }
 
 /**
- * init the alpha and beta
- */
-void PCFGEM::InitIO() {
-    //init alpha(A, i, i), find the value in the weight map, otherwise set it as 0;
-    //iterate each sentence.
-    for(auto it = ptr_str_matrix_->begin(); it != ptr_str_matrix_->end(); ++it){
-        std::vector<std::string> x_vector = (*it);
-    }
-
-    for(auto it = ptr_str_matrix_->begin(); it != ptr_str_matrix_->end(); ++it){
-        std::vector<std::string> str_vector = (*it);
-        for(int l=1; l<str_vector.size(); ++l){
-            for(int i=1; i< str_vector.size() -l; ++i){
-
-            }
-        }
-    }
-}
-
-/**
  * randomize the rule weight for the inside/outside algorithm.
  */
 void PCFGEM::RandomizeRuleWeight() {
@@ -203,10 +183,6 @@ void PCFGEM::RandomizeRuleWeight() {
            }
        }
    }
-}
-
-void PCFGEM::InitExpectCount() {
-
 }
 
 double PCFGEM::CalcZ(std::vector<std::string> &x_vector) {
@@ -282,6 +258,7 @@ double PCFGEM::GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j) {
  * @return
  */
 
+/*
 double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
     double value = 0;
     if(ptr_map->find(tuple) != ptr_map->end()){
@@ -289,7 +266,7 @@ double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
     }
     return  value;
 }
-
+*/
 double PCFGEM::CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j) {
     //check if the beta is stored in the map;
     double value = GetValue(ptr_beta_map_,rule_str,i,j);
@@ -556,8 +533,7 @@ double PCFGEM::CalcWordLevelRuleCount(std::vector<std::string> &x_vector, PCFG_R
  * @param rule
  * @return
  */
-double PCFGEM::CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule) {
-    double Z = CalcZ(x_vector);
+double PCFGEM::CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z) {
     // calc the count (A-X) for sentence x_vector
     if(rule.second.second == NO_RIGHT_CHILD_FLAG){
         return CalcWordLevelRuleCount(x_vector, rule, Z);
@@ -571,14 +547,16 @@ double PCFGEM::CalcRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule
  * EM for a sentence x_vector.
  * @param x_vector
  */
-void PCFGEM::CalcExpectedCount(std::vector<std::string> &x_vector) {
+double PCFGEM::CalcExpectedCount(std::vector<std::string> &x_vector) {
     //calculate the rule map. no need to reset tmp_map for each sentence.
+    double Z = CalcZ(x_vector);
     for(auto it = ptr_rule_expected_count_temp_->begin(); it!=ptr_rule_expected_count_temp_->end(); ++it){
         PCFG_Rule rule = (*it).first;
         double rule_count = 0;
-        rule_count = CalcRuleCount(x_vector, rule);
+        rule_count = CalcRuleCount(x_vector, rule, Z);
         (*it).second = rule_count;
     }
+    return  Z;
 }
 
 /**
@@ -587,7 +565,6 @@ void PCFGEM::CalcExpectedCount(std::vector<std::string> &x_vector) {
  * @param ptr_rule_vector
  * @return
  */
-
 double PCFGEM::CalcDenominator(std::vector<PCFG_Rule> *ptr_rule_vector) {
     double value = 0;
     for(auto it = ptr_rule_vector->begin(); it!=ptr_rule_vector->end(); ++it){
@@ -611,14 +588,17 @@ void PCFGEM::SumExpectedCount() {
 }
 
 
-void PCFGEM::EStep() {
+double PCFGEM::EStep() {
+    double Z = 0;
     for (auto it = ptr_str_matrix_->begin(); it != ptr_str_matrix_->end(); ++it) {
         std::vector<std::string> x_vector = (*it);
         InitAlphaBeta(x_vector);
-        CalcExpectedCount(x_vector);
+        CalcAlpha(x_vector);
+        Z += CalcExpectedCount(x_vector);
         SumExpectedCount();
         Reset();
     }
+    return Z;
 }
 
 void PCFGEM::MStep() {
@@ -656,17 +636,19 @@ void PCFGEM::MStep() {
  *  M step: update the rule weight using the expected count in E step.
  */
 void PCFGEM::EM() {
-    while(true == isConvergence()){
+    bool isConverge = true;
+    double Z = 0;
+    while(isConverge){
         //E-Step;
-        EStep();
+        Z = EStep();
         //M-Step;
         MStep();
+        //reset expected count;
+        for(auto it = ptr_rule_expected_count_->begin(); it != ptr_rule_expected_count_->end(); ++it){
+            (*it).second = 0;
+        }
+        std::cout << "The value of Z is:"<<Z<<std::endl;
     }
-}
-
-bool PCFGEM::isConvergence() {
-    //objective function.
-    
 }
 
 /**
