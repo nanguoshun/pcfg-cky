@@ -3,7 +3,7 @@
 #include "decoding.h"
 #include "pcfg-em.h"
 int main() {
-bool full_data = false;
+bool full_data = true;
 bool supervised = false;
 if(full_data){
     if(supervised){
@@ -13,7 +13,8 @@ if(full_data){
         ptr_decoder->Decoding("ptb-binary.test");
     } else{
         PCFGEM *ptr_pcfg = new PCFGEM();
-        ptr_pcfg->Training("ptb-binary.train");
+//        ptr_pcfg->Training("ptb-binary.train");
+        ptr_pcfg->Training("ptb-train-test.txt");
     }
 } else {
     PCFG *ptr_pcfg = new PCFG();

@@ -103,6 +103,23 @@ void PCFGEM::InitRuleMap(std::ifstream &ifs, std::string &str) {
         //
         index ++;
     }
+#ifdef IF_DEBUG_
+bool loop = true;
+    auto it1 = ptr_rule_weight_map_->begin();
+    auto it2 = ptr_rule_expected_count_->begin();
+    auto it3 = ptr_rule_expected_count_temp_->begin();
+    while (loop){
+        if(it1 == ptr_rule_weight_map_->end()){
+            return;
+        }
+        std::cout << "it1:"<<(*it1).first.first<<","<<(*it1).first.second.first<<","<<(*it1).first.second.second<<std::endl;
+        std::cout << "it2:"<<(*it2).first.first<<","<<(*it2).first.second.first<<","<<(*it2).first.second.second<<std::endl;
+        std::cout << "it3:"<<(*it3).first.first<<","<<(*it3).first.second.first<<","<<(*it3).first.second.second<<std::endl;
+        it1 ++;
+        it2 ++;
+        it3 ++;
+    }
+    #endif
 }
 
 void PCFGEM::InitPhraseLevelMap(const std::string &str) {
@@ -186,7 +203,7 @@ void PCFGEM::RandomizeRuleWeight() {
 }
 
 double PCFGEM::CalcZ(std::vector<std::string> &x_vector) {
-    IO_Tuple tuple = std::make_pair(ROOT_NODE,std::make_pair(0,x_vector.size()-1));
+    IO_Tuple tuple = std::make_pair(ROOT_NODE,std::make_pair(1,x_vector.size()));
     double z = ptr_alpha_map_->find(tuple)->second;
     return  z;
 }

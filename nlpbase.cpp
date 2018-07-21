@@ -6,10 +6,12 @@
 
 NLPBase::NLPBase() {
     ptr_str_matrix_ = new std::vector<std::vector<std::string>>;
+    ptr_phrase_level_rule_set_ = new std::unordered_set<std::string>;
 }
 
 NLPBase::~NLPBase() {
     delete ptr_str_matrix_;
+    delete ptr_phrase_level_rule_set_;
 }
 
 std::string NLPBase::IterationExtract(Node *ptr_root, int row) {
