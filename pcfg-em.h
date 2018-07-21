@@ -29,10 +29,11 @@ public:
     double CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z);
     double CalcWordLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z);
     double CalcZ(std::vector<std::string> &x_vector);
-    double CalcAlpha(int i, int j, std::string rule_str);
+    double CalcAlpha(int i, int j, std::string &rule_str,double weight);
     void CalcAlpha(std::vector<std::string> &x_vector);
-    double GetAlpha(double weight, PCFG_Rule &binary_rule, int i, int j);
+    double GetAlpha(int i, int j,PCFG_Rule &binary_rule, double weight);
     double CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j);
+    std::vector<PCFG_Rule> * GetRuleVector(std::string &rule_str);
     Rule_Weight_Vector GetRulesAsRightChild(std::string &rule_str);
     Rule_Weight_Vector GetRulesAsLeftChild(std::string &rule_str);
     Rule_Weight_Vector GetRulesAsRoot(std::string &root_str);
@@ -43,7 +44,6 @@ public:
     //double GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple);
     void Reset();
     void CalcSymbol_U(std::vector<std::string> &x_vector, std::string &str, int i, int j);
-    double CalcBinaryRule_U(PCFG_Rule &rule, int i, int k, int j);
     double GetRuleWeight(PCFG_Rule &rule);
     double CalcDenominator(std::vector<PCFG_Rule> *ptr_rule_vector);
 private:
@@ -52,7 +52,7 @@ private:
     Rule_Map *ptr_rule_map_;
     IO_Map *ptr_alpha_map_;
     IO_Map *ptr_beta_map_;
-    Rule_Weight_Map *ptr_binary_rule_weight_map_; //like X->YZ, and YZ are non-terminators.
+    PCFG_Rule_Set *ptr_phrase_rule_set_; //like X->YZ, and YZ are non-terminators.
     Rule_Weight_Map *ptr_rule_weight_map_;
     Rule_Weight_Map *ptr_rule_expected_count_;
     Rule_Weight_Map *ptr_rule_expected_count_temp_;

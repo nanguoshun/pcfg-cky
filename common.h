@@ -53,5 +53,6 @@ typedef std::unordered_map<IO_Tuple, double, boost::hash<IO_Tuple>> IO_Map;
 typedef std::tuple<int, int, int> Pos_Tuple; // i, k, j;
 typedef std::unordered_map<PCFG_Rule, Pos_Tuple, boost::hash<PCFG_Rule>> Binary_Rule_U_Map;
 typedef std::unordered_map<std::string, std::vector<PCFG_Rule> *>Symbol_Rule_Vector_Map;
+typedef std::unordered_set<PCFG_Rule, boost::hash<PCFG_Rule>> PCFG_Rule_Set;
 
 #endif //PCFG_COMMON_H
