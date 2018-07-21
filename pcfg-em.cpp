@@ -496,17 +496,30 @@ void PCFGEM::Reset() {
   */
 double PCFGEM::CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG_Rule &rule, double Z) {
     double value = 0;
-    for(int l= 0; l < x_vector.size(); ++l){
+    std::string str_a = rule.first;
+    std::string str_b = rule.second.first;
+    std::string str_c = rule.second.second;
+    double weight = GetRuleWeight(rule);
+    for(int l= 1; l < x_vector.size(); ++l){
         for(int i = 1; i <= x_vector.size()-l; ++i){
             int j = i + l;
+            double beta_a = CalcBeta(x_vector,str_a,i,j);
+            if (beta_a != 0) {
+                std::cout << "the rule and beta is: " << str_a << "," << str_b << "," << str_c << "," << i << "," << j
+                          << ", the beta is:" << beta_a << std::endl;
+            } else {
+                std::cout << "the rule and beta is: " << str_a << "," << str_b << "," << str_c << "," << i << "," << j
+                          << ", the beta is:" << beta_a << std::endl;
+            }
             for(int k = i; k <= j-1; ++k){
-                std::string str_a = rule.first;
-                std::string str_b = rule.second.first;
-                std::string str_c = rule.second.second;
-                double beta_a = CalcBeta(x_vector,str_a,i,j);
-                double weight = GetRuleWeight(rule);
                 double alpha_b = GetValue(ptr_alpha_map_,str_b,i,k);
                 double alpha_c = GetValue(ptr_alpha_map_,str_c,k+1,j);
+                if(alpha_b == NEGATIVE_VALUE){
+                    alpha_b = 0;
+                }
+                if(alpha_c ==NEGATIVE_VALUE){
+                    alpha_c = 0;
+                }
                 // u(A->BC, i, k, j) = beta(A, i, j) * weight(A->BC) * alpha(B, i, k) * alpha(C, k+1, j)
                 value += beta_a * weight * alpha_b * alpha_c;
             }
@@ -649,25 +662,29 @@ void PCFGEM::MStep() {
         std::string rule_str = rule.first;
         double numerator = 0;
         auto it_n = ptr_rule_expected_count_->find(rule);
-        if(it_n!= ptr_rule_expected_count_->end()) {
+        if (it_n != ptr_rule_expected_count_->end()) {
             numerator = (*it_n).second;
         } else {
             std::cout << "error: no rule in the expected count map" << std::endl;
         }
         double denominator = 0;
         auto it_d = ptr_symbol_rule_vector_map_->find(rule_str);
-        if(it_d != ptr_symbol_rule_vector_map_->end()){
+        if (it_d != ptr_symbol_rule_vector_map_->end()) {
             std::vector<PCFG_Rule> *ptr_vector = (*it_d).second;
             denominator = CalcDenominator(ptr_vector);
-        }else{
-            std::cout <<"error: no rule in the rule vector map"<<std::endl;
+        } else {
+            std::cout << "error: no rule in the rule vector map" << std::endl;
         }
         double weight = 0;
-        if(denominator !=0){
+        if (denominator != 0) {
             weight = numerator / denominator;
         }
         //update the weight of the rule.
         (*it).second = weight;
+#ifdef IF_DEBUG_
+        std::cout << "the updated weight " << (*it).first.first << "," << (*it).first.second.first << ","
+                  << (*it).first.second.second << " value is:" << (*it).second << std::endl;
+#endif
     }
 }
 
