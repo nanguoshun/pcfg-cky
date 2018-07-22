@@ -15,6 +15,8 @@ if(full_data){
         PCFGEM *ptr_pcfg = new PCFGEM();
 //        ptr_pcfg->Training("ptb-binary.train");
         ptr_pcfg->Training("ptb-train-test.txt");
+//        Decoder *ptr_decoder = new Decoder();
+//        ptr_decoder->Decoding("ptb-train-test.txt");
     }
 } else {
     PCFG *ptr_pcfg = new PCFG();

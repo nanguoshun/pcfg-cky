@@ -62,6 +62,8 @@ private:
     IO_Map *ptr_u_;
     Binary_Rule_U_Map *ptr_bin_rule_u_;
     Symbol_Rule_Vector_Map *ptr_symbol_rule_vector_map_;
+    //for test only.
+    int tmp_count_;
 };
 
 
