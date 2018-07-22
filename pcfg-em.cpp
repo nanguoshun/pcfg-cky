@@ -344,15 +344,6 @@ double PCFGEM::GetAlpha(int i, int j,PCFG_Rule &binary_rule, double weight) {
  * @return
  */
 
-/*
-double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
-    double value = 0;
-    if(ptr_map->find(tuple) != ptr_map->end()){
-        value = ptr_map->find(tuple)->second;
-    }
-    return  value;
-}
-*/
 
 /*
 double PCFGEM::CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j) {
@@ -461,92 +452,6 @@ double PCFGEM::GetValue(const IO_Map *ptr_map, const std::string &rule_str, cons
 }
 
 
-
-
-/**
- * Calculate the beta for a sentence x_vector.
- * @param x_vector
- */
-
-/*
-void PCFGEM::CalcBeta(std::vector<std::string> &x_vector) {
-    for (auto it = ptr_phrase_level_rule_set_->begin(); it != ptr_phrase_level_rule_set_->end(); ++it) {
-        std::string rule_str = (*it).first;
-        for (int l = 1; l < x_vector.size(); ++l) {
-            for (int i = 0; i < x_vector.size() - l; ++i) {
-                int j = i + l;
-                double value = CalcBeta(x_vector, i, j,rule_str);
-                IO_Tuple beta_tuple = std::make_pair(rule_str,std::make_pair(i,j));
-                ptr_beta_map_->insert(std::make_pair(beta_tuple,value));
-            }
-        }
-    }
-}
-*/
-/**
- * Calc beta(rule_str, i, j)
- *
- * Assume the rule rule_str indicates A, which is the first and second child of the rules B->CA and B->AC.
- *
- * @param i
- * @param j
- * @param rule_str
- * @return
- */
- /*
-double PCFGEM::CalcBeta(std::vector<std::string> &x_vector,int i, int j, std::string rule_str) {
-    double value = 0;
-    for(auto it = ptr_phrase_rule_set_->begin(); it != ptr_phrase_rule_set_->end(); ++it){
-        PCFG_Rule binary_rule = (*it).first;
-        double weight = 0;
-        // for B-> CA
-        if(rule_str == binary_rule.second.second){
-            weight = (*it).second;
-            value += GetBeta(x_vector,weight,binary_rule,i,j,true);
-        }
-        // for B-> AC
-        if(rule_str == binary_rule.second.first){
-            weight = (*it).second;
-            value += GetBeta(x_vector,weight,binary_rule,i,j,false);
-        }
-    }
-}
-
-/**
- *
- * @param weight
- * @param binary_rule
- * @param i
- * @param j
- * @param k_right: k is bigger than i or not.
- * @return
- */
-
-/*
-double PCFGEM::GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Rule &binary_rule, int i, int j, bool k_left) {
-    double value = 0;
-    // if the k is smaller than i;
-    if(k_left){
-        for(int k=1; k<i; ++k){
-            IO_Tuple tuple_alpha = std::make_pair(binary_rule.second.first,std::make_pair(k, i-1));
-            IO_Tuple tuple_beta = std::make_pair(binary_rule.first,std::make_pair(k,j));
-            double alpha_k_i = GetIOValue(ptr_alpha_map_,tuple_alpha);
-            double beta_k_J = GetIOValue(ptr_beta_map_,tuple_beta);
-            value += weight * alpha_k_i * beta_k_J;
-        }
-        //if the k is bigger than i;
-    } else{
-       for(int k=j+1; k<x_vector.size(); ++k){
-            IO_Tuple tuple_alpha = std::make_pair(binary_rule.second.second,std::make_pair(j+1,k));
-            IO_Tuple tuple_beta = std::make_pair(binary_rule.first,std::make_pair(i,k));
-            double alpha_j_k = GetIOValue(ptr_alpha_map_,tuple_alpha);
-            double beta_i_k = GetIOValue(ptr_beta_map_,tuple_beta);
-            value += weight * alpha_j_k * beta_i_k;
-       }
-    }
-    return value;
-}
-*/
 void PCFGEM::Reset() {
     ptr_alpha_map_->clear();
     ptr_beta_map_->clear();
