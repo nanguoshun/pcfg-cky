@@ -13,16 +13,24 @@ if(full_data){
         ptr_decoder->Decoding("ptb-binary.test");
     } else{
         PCFGEM *ptr_pcfg = new PCFGEM();
-//        ptr_pcfg->Training("ptb-binary.train");
-        ptr_pcfg->Training("ptb-train-test.txt");
-//        Decoder *ptr_decoder = new Decoder();
-//        ptr_decoder->Decoding("ptb-train-test.txt");
+        ptr_pcfg->Training("ptb-binary.train");
+        Decoder *ptr_decoder = new Decoder();
+        ptr_decoder->Decoding("ptb-binary.test");
     }
 } else {
-    PCFG *ptr_pcfg = new PCFG();
-    ptr_pcfg->SupervisedTraining("ptb-train-test.txt");
-    Decoder *ptr_decoder = new Decoder();
-    ptr_decoder->Decoding("ptb-train-test.txt");
+    if(supervised){
+        PCFG *ptr_pcfg = new PCFG();
+        ptr_pcfg->SupervisedTraining("ptb-train-test.txt");
+        Decoder *ptr_decoder = new Decoder();
+        ptr_decoder->Decoding("ptb-train-test.txt");
+
+    } else{
+        PCFGEM *ptr_pcfg = new PCFGEM();
+//        ptr_pcfg->Training("ptb-binary.train");
+        ptr_pcfg->Training("ptb-train-test.txt");
+        Decoder *ptr_decoder = new Decoder();
+        ptr_decoder->Decoding("ptb-train-test.txt");
+    }
 
 }
     //std::string str = "(ROOT (NP (NNP Ms.)(NNP Haag))(S (VP (VBZ plays)(NNP Elianti))(. .)))";

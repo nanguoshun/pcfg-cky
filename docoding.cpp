@@ -417,7 +417,7 @@ void Decoder::Compare() {
 
 void Decoder::Decoding(const char *test_file_name) {
     GeneratePhraseLevelRuleMap(PHRASE_LEVEL_FILE);
-    ReadModel(MODEL_FILE);
+    ReadModel(UNSUPERVISED_MODEL_FILE);
     ExtractSentenceFile(test_file_name);
     GenerateNonTerminatorMapFromWeighMap();
     std::ifstream ifs(SENTENCE_FILE);

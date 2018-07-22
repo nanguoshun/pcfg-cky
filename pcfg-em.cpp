@@ -6,7 +6,6 @@
 PCFGEM::PCFGEM() {
     ptr_rule_map_ = new Rule_Map;
     ptr_non_terminal_set_ = new std::unordered_set<std::string>;
-    ptr_terminal_set_ = new std::unordered_set<std::string>;
     instance_num_ = 0;
     ptr_alpha_map_ = new IO_Map;
     ptr_beta_map_ = new IO_Map;
@@ -20,7 +19,6 @@ PCFGEM::PCFGEM() {
 }
 
 PCFGEM::~PCFGEM() {
-   delete ptr_terminal_set_;
    delete ptr_rule_map_;
    delete ptr_non_terminal_set_;
    //delete each row in matrix;
@@ -53,8 +51,8 @@ PCFGEM::~PCFGEM() {
  * @param non_terminator
  * @param terminator
  */
-void PCFGEM::InitCFG(const std::string &rule_file, const std::string &non_terminator, const std::string &terminator) {
-    std::ifstream if_rule(rule_file), if_non(non_terminator), if_t(terminator);
+void PCFGEM::InitCFG(const std::string &rule_file) {
+    std::ifstream if_rule(rule_file), if_non(rule_file);
     std::string str;
     int index = 0;
     InitRuleMap(if_rule,str);
@@ -65,15 +63,6 @@ void PCFGEM::InitCFG(const std::string &rule_file, const std::string &non_termin
        ss >> non_str;
        ptr_non_terminal_set_->insert(non_str);
        index++;
-    }
-    index = 0;
-    while (std::getline(if_t,str)){
-        std::stringstream ss(str);
-        std::string t_str;
-        while (ss >> t_str){
-            ptr_terminal_set_->insert(t_str);
-            index++;
-        }
     }
     InitSymbolRuleVectorMap();
     RandomizeRuleWeight();
@@ -87,7 +76,6 @@ void PCFGEM::InitCFG(const std::string &rule_file, const std::string &non_termin
  */
 void PCFGEM::InitRuleMap(std::ifstream &ifs, std::string &str) {
     int index = 0;
-    double a[] = {0.1,1,0.2,0.7,1,1,1,1,1};
     while (std::getline(ifs,str)){
         std::stringstream ss(str);
         std::string tag1,tag2,tag3;
@@ -240,7 +228,62 @@ void PCFGEM::CalcAlpha(std::vector<std::string> &x_vector) {
                 std::cout << "The rule is: " << rule_str << "," << rule.second.first << "," << rule.second.second
                           << " The index is: " << i << "," << j << " Value is: " << value << std::endl;
 #endif
+            }
+        }
+    }
+}
 
+void PCFGEM::CalcBeta(std::vector<std::string> &x_vector) {
+    for(int l = x_vector.size() - 1; l>=0; --l){
+        for(int i = 1;i <= x_vector.size()-l; ++i){
+            int j = i + l;
+            for(auto it = ptr_non_terminal_set_->begin(); it!=ptr_non_terminal_set_->end(); ++it){
+                double value = 0;
+                std::string rule_str = (*it);
+                Rule_Weight_Vector rule_vector_right = GetRulesAsRightChild(rule_str);
+                Rule_Weight_Vector rule_vector_left =  GetRulesAsLeftChild(rule_str);
+                for(auto it_r = rule_vector_right.begin(); it_r != rule_vector_right.end(); ++it_r){
+                    double weight = (*it_r).second;
+                    std::string str_c = (*it_r).first.second.first;
+                    std::string str_b = (*it_r).first.first;
+                    for(int k=1; k<= i-1; ++k){
+                        double alpha = GetValue(ptr_alpha_map_,str_c,k,i-1);
+                        if(NEGATIVE_VALUE == alpha){
+                            alpha = 0;
+                        }
+                        double beta = GetValue(ptr_beta_map_,str_b,k,j);
+                        if(NEGATIVE_VALUE == beta){
+                            beta = 0;
+                        }
+                        value += weight * alpha * beta;
+                    }
+                }
+                for(auto it_l = rule_vector_left.begin(); it_l != rule_vector_left.end(); ++it_l){
+                    double weight = (*it_l).second;
+                    std::string str_c = (*it_l).first.second.second;
+                    std::string str_b = (*it_l).first.first;
+                    for(int k=j+1; k<=x_vector.size(); ++k){
+                        double alpha = GetValue(ptr_alpha_map_, str_c,j+1,k);
+                        if(NEGATIVE_VALUE == alpha){
+                            alpha = 0;
+                        }
+                        double beta = GetValue(ptr_beta_map_,str_b,i,k);
+                        if(NEGATIVE_VALUE == beta){
+                            beta = 0;
+                        }
+                        value += weight * alpha * beta;
+                    }
+                }
+                IO_Tuple beta_tuple = std::make_pair(rule_str,std::make_pair(i,j));
+                auto itt = ptr_beta_map_->find(beta_tuple);
+                if(itt == ptr_beta_map_->end()){
+                    ptr_beta_map_->insert(std::make_pair(beta_tuple,value));
+                } else{
+                    value = ptr_beta_map_->find(beta_tuple)->second;
+                }
+#ifdef IF_DEBUG_
+                std::cout << "beta "<<rule_str<<" , "<<i<<","<<j<<", value is: "<<value<<std::endl;
+#endif
             }
         }
     }
@@ -311,6 +354,7 @@ double PCFGEM::GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple) {
 }
 */
 
+/*
 double PCFGEM::CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j) {
     //check if the beta is stored in the map;
     double value = GetValue(ptr_beta_map_,rule_str,i,j);
@@ -372,7 +416,7 @@ double PCFGEM::CalcBeta(std::vector<std::string> &x_vector, std::string &rule_st
     value = right_value + left_value;
     return  value;
 }
-
+*/
 std::vector<PCFG_Rule>* PCFGEM::GetRuleVector(std::string &rule_str) {
     auto it = ptr_symbol_rule_vector_map_->find(rule_str);
     if(it != ptr_symbol_rule_vector_map_->end()){
@@ -415,6 +459,9 @@ double PCFGEM::GetValue(const IO_Map *ptr_map, const std::string &rule_str, cons
     }
     return  value;
 }
+
+
+
 
 /**
  * Calculate the beta for a sentence x_vector.
@@ -464,7 +511,7 @@ double PCFGEM::CalcBeta(std::vector<std::string> &x_vector,int i, int j, std::st
         }
     }
 }
-*/
+
 /**
  *
  * @param weight
@@ -500,7 +547,6 @@ double PCFGEM::GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Ru
     return value;
 }
 */
-
 void PCFGEM::Reset() {
     ptr_alpha_map_->clear();
     ptr_beta_map_->clear();
@@ -523,7 +569,11 @@ double PCFGEM::CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG
     for(int l= 1; l < x_vector.size(); ++l){
         for(int i = 1; i <= x_vector.size()-l; ++i){
             int j = i + l;
-            double beta_a = CalcBeta(x_vector,str_a,i,j);
+            double beta_a = GetValue(ptr_beta_map_,str_a,i,j);
+            if(NEGATIVE_VALUE == beta_a){
+                beta_a = 0;
+            }
+//            double beta_a = CalcBeta(x_vector,str_a,i,j);
 #ifdef IF_DEBUG__
             std::cout << "the rule and beta is: " << str_a << "," << str_b << "," << str_c << "," << i << "," << j
                           << ", the beta is:" << beta_a << std::endl;
@@ -554,13 +604,14 @@ double PCFGEM::CalcPhraseLevelRuleCount(std::vector<std::string> &x_vector, PCFG
  * @param j
  */
 
+/*
 void PCFGEM::CalcSymbol_U(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j) {
     double alpha = GetValue(ptr_alpha_map_,rule_str,i,j);
     double beta = CalcBeta(x_vector,rule_str,i,j);
     double value = alpha * beta;
     IO_Tuple tuple = std::make_pair(rule_str,std::make_pair(i,j));
     //ptr_u_->insert(std::make_pair(tuple,value));
-}
+}*/
 
 
 double PCFGEM::GetRuleWeight(PCFG_Rule &rule) {
@@ -593,7 +644,14 @@ double PCFGEM::CalcWordLevelRuleCount(std::vector<std::string> &x_vector, PCFG_R
         // x_i = x;
         if(x_vector[i-1] == rule.second.first){
             double alpha = GetValue(ptr_alpha_map_,rule_str,i,i);
-            double beta = CalcBeta(x_vector,rule_str,i,i);
+            if(NEGATIVE_VALUE == alpha){
+                alpha=0;
+            }
+            double beta = GetValue(ptr_beta_map_,rule_str,i,i);
+            if(NEGATIVE_VALUE == beta){
+                beta = 0;
+            }
+            //double beta = CalcBeta(x_vector,rule_str,i,i);
             value += alpha * beta;
         }
         //ptr_u_->insert(std::make_pair(tuple,value));
@@ -669,11 +727,15 @@ void PCFGEM::SumExpectedCount() {
 
 double PCFGEM::EStep() {
     double Z = 0;
+    int index = 0;
     for (auto it = ptr_str_matrix_->begin(); it != ptr_str_matrix_->end(); ++it) {
-        tmp_count_ = 0;
+        std::cout << "training "<<index<<" th sentence"<<std::endl;
         std::vector<std::string> x_vector = (*it);
         InitAlphaBeta(x_vector);
+        std::cout << "calc alpha"<<std::endl;
         CalcAlpha(x_vector);
+        std::cout << "calc beat"<<std::endl;
+        CalcBeta(x_vector);
         Z += CalcExpectedCount(x_vector);
         SumExpectedCount();
         Reset();
@@ -737,7 +799,9 @@ void PCFGEM::EM() {
             isConverge = false;
             std::cout << "Training is finished"<<std::endl;
         }
+#ifdef IF_DEBUG_
         std::cout << "The value of Z is:"<<Current_Z<<std::endl;
+#endif
     }
 }
 
@@ -760,7 +824,7 @@ void PCFGEM::SaveModel(std::string model_file) {
 }
 
 void PCFGEM::Training(const char *file_name) {
-    InitCFG(MODEL_FILE,MODEL_FILE,SENTENCE_FILE);
+    InitCFG(MODEL_FILE);
     InitPhraseLevelMap(PHRASE_LEVEL_FILE);
     ExtractSentenceFile(file_name);
     EM();

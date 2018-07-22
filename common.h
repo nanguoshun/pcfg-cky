@@ -34,7 +34,7 @@ const double NEGATIVE_VALUE = -100000;
 const std::string ROOT_NODE = "ROOT";
 const std::string TERMINATOR_FLAG = "TERNMINATOR";
 const std::string UNSUPERVISED_MODEL_FILE = "unsupervised-model.txt";
-#define IF_DEBUG_ = 1;
+#define IF_DEBUG___ = 1;
 typedef std::pair<std::string, std::pair<std::string, std::string>> PCFG_Rule;
 typedef std::vector<std::pair<PCFG_Rule, double>> Rule_Weight_Vector;
 typedef std::unordered_map<PCFG_Rule, int, boost::hash<PCFG_Rule>> Rule_Map;

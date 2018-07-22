@@ -13,7 +13,7 @@ public:
     PCFGEM();
     ~PCFGEM();
     void Training(const char * file_name);
-    void InitCFG(const std::string &rule_file, const std::string &non_terminator, const std::string&terminator);
+    void InitCFG(const std::string &rule_file);
     void InitRuleMap(std::ifstream &ifs, std::string &str);
     void InitPhraseLevelMap(const std::string &str);
     void InitSymbolRuleVectorMap();
@@ -31,19 +31,20 @@ public:
     double CalcZ(std::vector<std::string> &x_vector);
     double CalcAlpha(int i, int j, std::string &rule_str,double weight);
     void CalcAlpha(std::vector<std::string> &x_vector);
+    void CalcBeta(std::vector<std::string> &x_vector);
     double GetAlpha(int i, int j,PCFG_Rule &binary_rule, double weight);
-    double CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j);
+    //double CalcBeta(std::vector<std::string> &x_vector, std::string &rule_str, int i, int j);
     std::vector<PCFG_Rule> * GetRuleVector(std::string &rule_str);
     Rule_Weight_Vector GetRulesAsRightChild(std::string &rule_str);
     Rule_Weight_Vector GetRulesAsLeftChild(std::string &rule_str);
-    Rule_Weight_Vector GetRulesAsRoot(std::string &root_str);
+    //Rule_Weight_Vector GetRulesAsRoot(std::string &root_str);
     double GetValue(const IO_Map *ptr_map, const std::string &rule_str, const int i, const int j);
     //void CalcBeta(std::vector<std::string> &x_vector);
     //double CalcBeta(std::vector<std::string> &x_vector, int i, int j, std::string rule_str);
     //double GetBeta(std::vector<std::string> &x_vector,double weight, PCFG_Rule &binary_rule, int i, int j, bool k_left);
     //double GetIOValue(const IO_Map *ptr_map, const IO_Tuple &tuple);
     void Reset();
-    void CalcSymbol_U(std::vector<std::string> &x_vector, std::string &str, int i, int j);
+    //void CalcSymbol_U(std::vector<std::string> &x_vector, std::string &str, int i, int j);
     double GetRuleWeight(PCFG_Rule &rule);
     double CalcDenominator(std::vector<PCFG_Rule> *ptr_rule_vector);
 private:
@@ -62,8 +63,6 @@ private:
     IO_Map *ptr_u_;
     Binary_Rule_U_Map *ptr_bin_rule_u_;
     Symbol_Rule_Vector_Map *ptr_symbol_rule_vector_map_;
-    //for test only.
-    int tmp_count_;
 };
 
 
